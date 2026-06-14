@@ -1,0 +1,73 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { createTestApp } from '../fixtures/index.js'
+import type { FastifyInstance } from 'fastify'
+
+describe('Auth API', () => {
+  let app: FastifyInstance
+
+  beforeEach(async () => {
+    app = await createTestApp()
+  })
+
+  afterEach(async () => {
+    await app.close()
+  })
+
+  it('POST /api/v1/auth/register creates a user', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: { name: 'Alice', email: 'alice@example.com', password: 'password123' },
+    })
+    expect(res.statusCode).toBe(201)
+    const body = res.json<{ data: { id: string; email: string } }>()
+    expect(body.data.email).toBe('alice@example.com')
+    expect(body.data.id).toBeDefined()
+  })
+
+  it('POST /api/v1/auth/register rejects duplicate email', async () => {
+    const payload = { name: 'Bob', email: 'bob@example.com', password: 'password123' }
+    await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload })
+    const res = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload })
+    expect(res.statusCode).toBe(409)
+  })
+
+  it('POST /api/v1/auth/register rejects weak password', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: { name: 'Charlie', email: 'charlie@example.com', password: 'short' },
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('POST /api/v1/auth/login returns a token', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: { name: 'Dave', email: 'dave@example.com', password: 'password123' },
+    })
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: 'dave@example.com', password: 'password123' },
+    })
+    expect(res.statusCode).toBe(200)
+    const body = res.json<{ data: { token: string } }>()
+    expect(body.data.token).toBeDefined()
+  })
+
+  it('POST /api/v1/auth/login rejects wrong password', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: { name: 'Eve', email: 'eve@example.com', password: 'password123' },
+    })
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: 'eve@example.com', password: 'wrongpassword' },
+    })
+    expect(res.statusCode).toBe(401)
+  })
+})
