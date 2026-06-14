@@ -11,7 +11,7 @@ A production-ready REST API built with **Fastify 5**, **TypeScript**, **PostgreS
 | Database | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team) |
 | Validation | [Zod](https://zod.dev) + [fastify-type-provider-zod](https://github.com/turkerdev/fastify-type-provider-zod) |
 | Auth | JWT via [@fastify/jwt](https://github.com/fastify/fastify-jwt) |
-| API Docs | Swagger UI via [@fastify/swagger](https://github.com/fastify/fastify-swagger) |
+| API Docs | [Scalar](https://scalar.com) + [@fastify/swagger](https://github.com/fastify/fastify-swagger) (OpenAPI spec) |
 | Testing | [Vitest](https://vitest.dev) |
 | Package Manager | pnpm |
 
@@ -32,7 +32,7 @@ src/
 │       └── index.ts
 ├── plugins/
 │   ├── cors.ts                   # @fastify/cors
-│   ├── swagger.ts                # @fastify/swagger + swagger-ui
+│   ├── swagger.ts                # @fastify/swagger (spec) + Scalar (UI at /)
 │   ├── db.ts                     # Decorates fastify.db
 │   ├── jwt.ts                    # @fastify/jwt
 │   ├── helmet.ts                 # @fastify/helmet
@@ -128,7 +128,7 @@ The server starts at `http://localhost:3000`.
 
 ## API Documentation
 
-Swagger UI is available at `http://localhost:3000/documentation` when the server is running.
+The [Scalar API reference](https://scalar.com) is served at `http://localhost:3000/` when the server is running. The raw OpenAPI spec (JSON) is available at `http://localhost:3000/openapi.json` for import into Postman, Insomnia, or other tooling.
 
 ## Available Scripts
 

@@ -1,11 +1,11 @@
 import fp from 'fastify-plugin'
 import type { FastifyPluginAsync } from 'fastify'
-import swagger from '@fastify/swagger'
-import swaggerUi from '@fastify/swagger-ui'
+import openapi from '@fastify/swagger'
+import scalar from '@scalar/fastify-api-reference'
 import { jsonSchemaTransform } from 'fastify-type-provider-zod'
 
-const swaggerPlugin: FastifyPluginAsync = async (fastify) => {
-  await fastify.register(swagger, {
+const scalarPlugin: FastifyPluginAsync = async (fastify) => {
+  await fastify.register(openapi, {
     openapi: {
       openapi: '3.0.0',
       info: {
@@ -38,13 +38,13 @@ const swaggerPlugin: FastifyPluginAsync = async (fastify) => {
     transform: jsonSchemaTransform,
   })
 
-  await fastify.register(swaggerUi, {
-    routePrefix: '/documentation',
-    uiConfig: {
-      docExpansion: 'list',
-      deepLinking: false,
+  await fastify.register(scalar, {
+    routePrefix: '/',
+    configuration: {
+      spec: { content: () => fastify.swagger() },
+      theme: 'purple',
     },
   })
 }
 
-export default fp(swaggerPlugin, { name: 'swagger' })
+export default fp(scalarPlugin, { name: 'scalar' })

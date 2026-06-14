@@ -3,7 +3,7 @@ import envPlugin from '@fastify/env'
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod'
 import { configSchema } from './config/index.js'
 import helmetPlugin from './plugins/helmet.js'
-import swaggerPlugin from './plugins/swagger.js'
+import scalarPlugin from './plugins/scalar.js'
 import corsPlugin from './plugins/cors.js'
 import rateLimitPlugin from './plugins/rate-limit.js'
 import dbPlugin from './plugins/db.js'
@@ -39,7 +39,7 @@ export async function buildApp() {
 
   // Infrastructure
   await fastify.register(helmetPlugin)
-  await fastify.register(swaggerPlugin)
+  await fastify.register(scalarPlugin)
   await fastify.register(corsPlugin)
   await fastify.register(rateLimitPlugin)
   await fastify.register(dbPlugin)
