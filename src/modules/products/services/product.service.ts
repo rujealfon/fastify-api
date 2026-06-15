@@ -4,18 +4,29 @@ import { products } from '../../../db/schema/index.js'
 import { NotFoundError } from '../../../common/errors/NotFoundError.js'
 import type { CreateProductBody, UpdateProductBody } from '../schemas/index.js'
 
+const productColumns = {
+  id: true,
+  name: true,
+  price: true,
+  stock: true,
+  createdAt: true,
+  updatedAt: true,
+} as const
+
 function toProduct(row: {
   id: string
   name: string
   price: string
   stock: number
   createdAt: Date
+  updatedAt: Date
 }) {
-  return { ...row, createdAt: row.createdAt.toISOString() }
+  return { ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }
 }
 
 export async function findAllProducts(db: Db, page: number, limit: number) {
   const rows = await db.query.products.findMany({
+    columns: productColumns,
     offset: (page - 1) * limit,
     limit,
   })
@@ -23,7 +34,10 @@ export async function findAllProducts(db: Db, page: number, limit: number) {
 }
 
 export async function findProductById(db: Db, id: string) {
-  const row = await db.query.products.findFirst({ where: eq(products.id, id) })
+  const row = await db.query.products.findFirst({
+    where: eq(products.id, id),
+    columns: productColumns,
+  })
   if (!row) throw new NotFoundError('Product', id)
   return toProduct(row)
 }
@@ -32,7 +46,7 @@ export async function createProduct(db: Db, body: CreateProductBody) {
   const [row] = await db
     .insert(products)
     .values({ name: body.name, price: String(body.price), stock: body.stock })
-    .returning()
+    .returning({ id: products.id, name: products.name, price: products.price, stock: products.stock, createdAt: products.createdAt, updatedAt: products.updatedAt })
   return toProduct(row)
 }
 
@@ -46,7 +60,7 @@ export async function updateProduct(db: Db, id: string, body: UpdateProductBody)
       ...(body.stock !== undefined && { stock: body.stock }),
     })
     .where(eq(products.id, id))
-    .returning()
+    .returning({ id: products.id, name: products.name, price: products.price, stock: products.stock, createdAt: products.createdAt, updatedAt: products.updatedAt })
   return toProduct(row)
 }
 

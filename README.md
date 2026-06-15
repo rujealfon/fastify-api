@@ -74,57 +74,10 @@ modules/<domain>/
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm 11+
-- PostgreSQL 16+ (or Docker)
+- Docker
+- pnpm 11+ (for generating migrations locally)
 
-### Local Development
-
-**1. Install dependencies**
-
-```bash
-pnpm install
-```
-
-**2. Configure environment**
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and set your `DATABASE_URL` and `JWT_SECRET`:
-
-```env
-PORT=3000
-HOST=0.0.0.0
-NODE_ENV=development
-DATABASE_URL=postgres://postgres:password@localhost:5432/fastify_dev
-JWT_SECRET=your_random_secret_at_least_32_characters_long
-LOG_LEVEL=info
-```
-
-**3. Start PostgreSQL**
-
-With Docker:
-```bash
-docker-compose up -d postgres
-```
-
-Or use an existing PostgreSQL instance and update `DATABASE_URL` accordingly.
-
-**4. Run migrations**
-
-```bash
-pnpm db:migrate
-```
-
-**5. Start the dev server**
-
-```bash
-pnpm dev
-```
-
-The server starts at `http://localhost:3000`.
+See [DOCKER.md](DOCKER.md) for the full step-by-step setup.
 
 ## API Documentation
 
@@ -134,14 +87,9 @@ The [Scalar API reference](https://scalar.com) is served at `http://localhost:30
 
 | Script | Description |
 |---|---|
-| `pnpm dev` | Start dev server with hot reload (`tsx watch`) |
-| `pnpm build` | Compile TypeScript to `dist/` |
-| `pnpm start` | Run compiled production build |
-| `pnpm test` | Run all tests once |
-| `pnpm test:watch` | Run tests in watch mode |
-| `pnpm db:generate` | Generate Drizzle migration files from schema |
-| `pnpm db:migrate` | Apply pending migrations to the database |
-| `pnpm db:studio` | Open Drizzle Studio (visual DB browser) |
+| `pnpm build` | Compile TypeScript to `dist/` (used by Dockerfile) |
+| `pnpm db:generate` | Generate a migration file after schema changes |
+| `pnpm db:migrate:docker` | Apply pending migrations inside the Docker container |
 | `pnpm lint` | Lint source files with ESLint |
 | `pnpm format` | Format source files with Prettier |
 
@@ -212,42 +160,17 @@ curl http://localhost:3000/api/v1/users \
   -H 'Authorization: Bearer <token>'
 ```
 
-## Running with Docker
-
-Start the full stack (app + PostgreSQL):
-
-```bash
-docker-compose up
-```
-
-The app runs at `http://localhost:3000`. The `docker-compose.yml` automatically wires the database connection.
-
-## Running Tests
-
-Tests use `app.inject()` — no real HTTP port is bound, and each test spins up and tears down its own app instance.
-
-```bash
-pnpm test
-```
-
-Tests require a running PostgreSQL instance. Set `DATABASE_URL` in your environment or `.env` before running.
-
 ## Database
 
-Drizzle ORM is used for all database access. Schema definitions live in `src/db/schema/`.
+Drizzle ORM is used for all database access. Schema definitions live in `src/db/schema/`. Migrations are stored in `migrations/` and committed to version control.
 
 ```bash
-# After changing a schema file, generate a new migration:
+# After editing a schema file, generate a new migration:
 pnpm db:generate
 
-# Apply all pending migrations:
-pnpm db:migrate
-
-# Inspect the database visually:
-pnpm db:studio
+# Apply migrations inside the running Docker container:
+pnpm db:migrate:docker
 ```
-
-Migrations are stored in `migrations/` and committed to version control.
 
 ## Architecture Notes
 

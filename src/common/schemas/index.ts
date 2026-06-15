@@ -6,7 +6,7 @@ export const paginationQuerySchema = z.object({
 })
 
 export const uuidParamSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
 })
 
 export const apiErrorSchema = z.object({

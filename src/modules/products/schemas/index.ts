@@ -2,11 +2,12 @@ import { z } from 'zod'
 import { paginationQuerySchema, uuidParamSchema } from '../../../common/schemas/index.js'
 
 export const productSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string(),
   price: z.string(),
   stock: z.number().int(),
-  createdAt: z.string().datetime(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
 })
 
 export const createProductBodySchema = z.object({

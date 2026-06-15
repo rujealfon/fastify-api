@@ -42,7 +42,7 @@ const scalarPlugin: FastifyPluginAsync = async (fastify) => {
     routePrefix: '/',
     configuration: {
       spec: { content: () => fastify.swagger() },
-      theme: 'purple',
+      theme: 'moon',
     },
   })
 }
