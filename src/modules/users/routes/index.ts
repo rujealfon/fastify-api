@@ -1,14 +1,14 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import {
-  userSchema,
-  createUserBodySchema,
-  updateUserBodySchema,
-  userQuerySchema,
-  userParamsSchema,
-} from '@/modules/users/schemas/index.js'
 import { apiErrorSchema } from '@/common/schemas/index.js'
 import * as controller from '@/modules/users/controllers/user.controller.js'
+import {
+  createUserBodySchema,
+  updateUserBodySchema,
+  userParamsSchema,
+  userQuerySchema,
+  userSchema,
+} from '@/modules/users/schemas/index.js'
 
 const usersRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get('/', {

@@ -1,7 +1,7 @@
-import fp from 'fastify-plugin'
 import type { FastifyPluginAsync } from 'fastify'
 import openapi from '@fastify/swagger'
 import scalar from '@scalar/fastify-api-reference'
+import fp from 'fastify-plugin'
 import { jsonSchemaTransform } from 'fastify-type-provider-zod'
 
 const scalarPlugin: FastifyPluginAsync = async (fastify) => {

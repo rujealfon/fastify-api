@@ -1,6 +1,6 @@
-import type { FastifyRequest, FastifyReply } from 'fastify'
-import type { CreateProductBody, UpdateProductBody } from '@/modules/products/schemas/index.js'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { PaginationQuery, UuidParam } from '@/common/schemas/index.js'
+import type { CreateProductBody, UpdateProductBody } from '@/modules/products/schemas/index.js'
 import * as productService from '@/modules/products/services/product.service.js'
 
 export async function getProducts(
@@ -29,7 +29,7 @@ export async function createProduct(
 }
 
 export async function updateProduct(
-  request: FastifyRequest<{ Params: UuidParam; Body: UpdateProductBody }>,
+  request: FastifyRequest<{ Params: UuidParam, Body: UpdateProductBody }>,
   _reply: FastifyReply,
 ) {
   const product = await productService.updateProduct(

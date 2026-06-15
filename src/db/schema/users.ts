@@ -1,5 +1,5 @@
-import { uuidv7 } from 'uuidv7'
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { uuidv7 } from 'uuidv7'
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),

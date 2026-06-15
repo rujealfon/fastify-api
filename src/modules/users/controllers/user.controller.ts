@@ -1,6 +1,6 @@
-import type { FastifyRequest, FastifyReply } from 'fastify'
-import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { PaginationQuery, UuidParam } from '@/common/schemas/index.js'
+import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
 import * as userService from '@/modules/users/services/user.service.js'
 
 export async function getUsers(
@@ -29,7 +29,7 @@ export async function createUser(
 }
 
 export async function updateUser(
-  request: FastifyRequest<{ Params: UuidParam; Body: UpdateUserBody }>,
+  request: FastifyRequest<{ Params: UuidParam, Body: UpdateUserBody }>,
   _reply: FastifyReply,
 ) {
   const user = await userService.updateUser(request.server.db, request.params.id, request.body)

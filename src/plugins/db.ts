@@ -1,6 +1,7 @@
-import fp from 'fastify-plugin'
 import type { FastifyPluginAsync } from 'fastify'
-import { createDb, type Db } from '@/db/index.js'
+import type { Db } from '@/db/index.js'
+import fp from 'fastify-plugin'
+import { createDb } from '@/db/index.js'
 
 declare module 'fastify' {
   interface FastifyInstance {

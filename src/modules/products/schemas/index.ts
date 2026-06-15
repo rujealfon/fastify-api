@@ -22,11 +22,11 @@ export const updateProductBodySchema = z
     price: z.number().min(0).optional(),
     stock: z.number().int().min(0).optional(),
   })
-  .refine((data) => Object.keys(data).length > 0, {
+  .refine(data => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',
   })
 
-export { paginationQuerySchema as productQuerySchema, uuidParamSchema as productParamsSchema }
+export { uuidParamSchema as productParamsSchema, paginationQuerySchema as productQuerySchema }
 
 export type Product = z.infer<typeof productSchema>
 export type CreateProductBody = z.infer<typeof createProductBodySchema>

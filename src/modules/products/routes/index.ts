@@ -1,14 +1,14 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import {
-  productSchema,
-  createProductBodySchema,
-  updateProductBodySchema,
-  productQuerySchema,
-  productParamsSchema,
-} from '@/modules/products/schemas/index.js'
 import { apiErrorSchema } from '@/common/schemas/index.js'
 import * as controller from '@/modules/products/controllers/product.controller.js'
+import {
+  createProductBodySchema,
+  productParamsSchema,
+  productQuerySchema,
+  productSchema,
+  updateProductBodySchema,
+} from '@/modules/products/schemas/index.js'
 
 const productsRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get('/', {

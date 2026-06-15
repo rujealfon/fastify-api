@@ -1,6 +1,6 @@
-import fp from 'fastify-plugin'
 import type { FastifyPluginAsync } from 'fastify'
 import { randomUUID } from 'node:crypto'
+import fp from 'fastify-plugin'
 
 const requestIdHook: FastifyPluginAsync = async (fastify) => {
   fastify.addHook('onRequest', async (request, reply) => {

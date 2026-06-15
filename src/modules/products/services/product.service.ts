@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/index.js'
-import { products } from '@/db/schema/index.js'
-import { NotFoundError } from '@/common/errors/NotFoundError.js'
 import type { CreateProductBody, UpdateProductBody } from '@/modules/products/schemas/index.js'
+import { eq } from 'drizzle-orm'
+import { NotFoundError } from '@/common/errors/NotFoundError.js'
+import { products } from '@/db/schema/index.js'
 
 const productColumns = {
   id: true,
@@ -38,7 +38,8 @@ export async function findProductById(db: Db, id: string) {
     where: eq(products.id, id),
     columns: productColumns,
   })
-  if (!row) throw new NotFoundError('Product', id)
+  if (!row)
+    throw new NotFoundError('Product', id)
   return toProduct(row)
 }
 

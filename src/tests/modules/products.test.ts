@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createTestApp, registerAndLogin } from '@/tests/fixtures/index.js'
 import type { FastifyInstance } from 'fastify'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createTestApp, registerAndLogin } from '@/tests/fixtures/index.js'
 
-describe('Products API', () => {
+describe('products API', () => {
   let app: FastifyInstance
   let token: string
 
@@ -15,7 +15,7 @@ describe('Products API', () => {
     await app.close()
   })
 
-  it('POST /api/v1/products creates a product', async () => {
+  it('pOST /api/v1/products creates a product', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/products',
@@ -23,12 +23,12 @@ describe('Products API', () => {
       payload: { name: 'Widget', price: 9.99, stock: 100 },
     })
     expect(res.statusCode).toBe(201)
-    const body = res.json<{ data: { id: string; name: string } }>()
+    const body = res.json<{ data: { id: string, name: string } }>()
     expect(body.data.name).toBe('Widget')
     expect(body.data.id).toBeDefined()
   })
 
-  it('GET /api/v1/products returns list', async () => {
+  it('gET /api/v1/products returns list', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/products',
@@ -39,7 +39,7 @@ describe('Products API', () => {
     expect(Array.isArray(body.data)).toBe(true)
   })
 
-  it('GET /api/v1/products/:id returns 404 for unknown id', async () => {
+  it('gET /api/v1/products/:id returns 404 for unknown id', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/products/00000000-0000-0000-0000-000000000000',
@@ -48,7 +48,7 @@ describe('Products API', () => {
     expect(res.statusCode).toBe(404)
   })
 
-  it('PATCH /api/v1/products/:id updates a product', async () => {
+  it('pATCH /api/v1/products/:id updates a product', async () => {
     const create = await app.inject({
       method: 'POST',
       url: '/api/v1/products',
@@ -66,7 +66,7 @@ describe('Products API', () => {
     expect(update.statusCode).toBe(200)
   })
 
-  it('DELETE /api/v1/products/:id deletes a product', async () => {
+  it('dELETE /api/v1/products/:id deletes a product', async () => {
     const create = await app.inject({
       method: 'POST',
       url: '/api/v1/products',

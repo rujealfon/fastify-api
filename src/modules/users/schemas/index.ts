@@ -20,11 +20,11 @@ export const updateUserBodySchema = z
     name: z.string().min(1).max(100).optional(),
     email: z.email().optional(),
   })
-  .refine((data) => Object.keys(data).length > 0, {
+  .refine(data => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',
   })
 
-export { paginationQuerySchema as userQuerySchema, uuidParamSchema as userParamsSchema }
+export { uuidParamSchema as userParamsSchema, paginationQuerySchema as userQuerySchema }
 
 export type User = z.infer<typeof userSchema>
 export type CreateUserBody = z.infer<typeof createUserBodySchema>

@@ -7,7 +7,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate:docker": "docker exec fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate",
 		"lint": "eslint src",
-		"format": "prettier --write src"
+		"format": "eslint src --fix"
 	},
 	"dependencies": {
 		"@fastify/cors": "^11.2.0",
@@ -28,16 +28,14 @@
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
-		"@eslint/js": "^10.0.1",
+		"@antfu/eslint-config": "^9.0.0",
 		"@types/bcryptjs": "^3.0.0",
 		"@types/node": "^25.9.3",
 		"drizzle-kit": "^0.31.10",
 		"eslint": "^10.5.0",
-		"prettier": "^3.8.4",
 		"tsc-alias": "^1.8.17",
 		"tsx": "^4.22.4",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.61.0",
 		"vitest": "^4.1.8"
 	}
 }

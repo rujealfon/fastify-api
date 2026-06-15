@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { buildApp } from './app.js'
 
 async function start() {
@@ -8,7 +9,8 @@ async function start() {
       host: app.config.HOST,
     })
     app.log.info(`Server listening at ${address}`)
-  } catch (err) {
+  }
+  catch (err) {
     app.log.error(err)
     process.exit(1)
   }

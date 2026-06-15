@@ -5,7 +5,8 @@ export async function checkDb(db: Db): Promise<boolean> {
   try {
     await db.execute(sql`SELECT 1`)
     return true
-  } catch {
+  }
+  catch {
     return false
   }
 }

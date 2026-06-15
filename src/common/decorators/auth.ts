@@ -1,5 +1,5 @@
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
-import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -11,7 +11,8 @@ const authDecorator: FastifyPluginAsync = async (fastify) => {
   fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.jwtVerify()
-    } catch {
+    }
+    catch {
       reply.status(401).send({ statusCode: 401, code: 'UNAUTHORIZED', message: 'Invalid or missing token' })
     }
   })

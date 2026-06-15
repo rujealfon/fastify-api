@@ -1,5 +1,5 @@
-import type { FastifyRequest, FastifyReply } from 'fastify'
-import type { RegisterBody, LoginBody } from '@/modules/auth/schemas/index.js'
+import type { FastifyReply, FastifyRequest } from 'fastify'
+import type { LoginBody, RegisterBody } from '@/modules/auth/schemas/index.js'
 import * as authService from '@/modules/auth/services/auth.service.js'
 
 export async function register(

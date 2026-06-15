@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createTestApp, registerAndLogin } from '@/tests/fixtures/index.js'
 import type { FastifyInstance } from 'fastify'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createTestApp, registerAndLogin } from '@/tests/fixtures/index.js'
 
-describe('Users API', () => {
+describe('users API', () => {
   let app: FastifyInstance
   let token: string
 
@@ -15,35 +15,35 @@ describe('Users API', () => {
     await app.close()
   })
 
-  it('GET /api/v1/users requires auth', async () => {
+  it('gET /api/v1/users requires auth', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/users' })
     expect(res.statusCode).toBe(401)
   })
 
-  it('GET /api/v1/users returns list', async () => {
+  it('gET /api/v1/users returns list', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/users',
       headers: { authorization: `Bearer ${token}` },
     })
     expect(res.statusCode).toBe(200)
-    const body = res.json<{ data: unknown[]; meta: { page: number } }>()
+    const body = res.json<{ data: unknown[], meta: { page: number } }>()
     expect(Array.isArray(body.data)).toBe(true)
     expect(body.meta.page).toBe(1)
   })
 
-  it('POST /api/v1/users creates a user', async () => {
+  it('pOST /api/v1/users creates a user', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/users',
       payload: { name: 'New User', email: 'new@example.com', password: 'password123' },
     })
     expect(res.statusCode).toBe(201)
-    const body = res.json<{ data: { id: string; name: string } }>()
+    const body = res.json<{ data: { id: string, name: string } }>()
     expect(body.data.name).toBe('New User')
   })
 
-  it('GET /api/v1/users/:id returns 404 for unknown id', async () => {
+  it('gET /api/v1/users/:id returns 404 for unknown id', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/users/00000000-0000-0000-0000-000000000000',
@@ -52,7 +52,7 @@ describe('Users API', () => {
     expect(res.statusCode).toBe(404)
   })
 
-  it('PATCH /api/v1/users/:id updates a user', async () => {
+  it('pATCH /api/v1/users/:id updates a user', async () => {
     const create = await app.inject({
       method: 'POST',
       url: '/api/v1/users',
@@ -70,7 +70,7 @@ describe('Users API', () => {
     expect(update.json<{ data: { name: string } }>().data.name).toBe('New Name')
   })
 
-  it('DELETE /api/v1/users/:id deletes a user', async () => {
+  it('dELETE /api/v1/users/:id deletes a user', async () => {
     const create = await app.inject({
       method: 'POST',
       url: '/api/v1/users',
