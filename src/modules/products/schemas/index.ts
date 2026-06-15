@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { paginationQuerySchema, uuidParamSchema } from '../../../common/schemas/index.js'
+import { paginationQuerySchema, uuidParamSchema } from '@/common/schemas/index.js'
 
 export const productSchema = z.object({
   id: z.uuid(),

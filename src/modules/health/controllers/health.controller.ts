@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import { checkDb } from '../services/health.service.js'
+import { checkDb } from '@/modules/health/services/health.service.js'
 
 export async function liveness(_request: FastifyRequest, _reply: FastifyReply) {
   return { status: 'ok' }

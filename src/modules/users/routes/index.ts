@@ -6,9 +6,9 @@ import {
   updateUserBodySchema,
   userQuerySchema,
   userParamsSchema,
-} from '../schemas/index.js'
-import { apiErrorSchema } from '../../../common/schemas/index.js'
-import * as controller from '../controllers/user.controller.js'
+} from '@/modules/users/schemas/index.js'
+import { apiErrorSchema } from '@/common/schemas/index.js'
+import * as controller from '@/modules/users/controllers/user.controller.js'
 
 const usersRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get('/', {

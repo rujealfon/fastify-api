@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
-import type { Db } from '../../../db/index.js'
-import { users } from '../../../db/schema/index.js'
-import { NotFoundError } from '../../../common/errors/NotFoundError.js'
-import { ConflictError } from '../../../common/errors/ConflictError.js'
-import type { CreateUserBody, UpdateUserBody } from '../schemas/index.js'
+import type { Db } from '@/db/index.js'
+import { users } from '@/db/schema/index.js'
+import { NotFoundError } from '@/common/errors/NotFoundError.js'
+import { ConflictError } from '@/common/errors/ConflictError.js'
+import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
 
 const userColumns = {
   id: true,

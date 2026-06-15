@@ -1,7 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import type { CreateUserBody, UpdateUserBody } from '../schemas/index.js'
-import type { PaginationQuery, UuidParam } from '../../../common/schemas/index.js'
-import * as userService from '../services/user.service.js'
+import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
+import type { PaginationQuery, UuidParam } from '@/common/schemas/index.js'
+import * as userService from '@/modules/users/services/user.service.js'
 
 export async function getUsers(
   request: FastifyRequest<{ Querystring: PaginationQuery }>,

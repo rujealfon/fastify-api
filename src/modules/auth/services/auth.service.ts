@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
-import type { Db } from '../../../db/index.js'
-import { users } from '../../../db/schema/index.js'
-import { ConflictError } from '../../../common/errors/ConflictError.js'
-import { UnauthorizedError } from '../../../common/errors/UnauthorizedError.js'
-import type { RegisterBody, LoginBody } from '../schemas/index.js'
+import type { Db } from '@/db/index.js'
+import { users } from '@/db/schema/index.js'
+import { ConflictError } from '@/common/errors/ConflictError.js'
+import { UnauthorizedError } from '@/common/errors/UnauthorizedError.js'
+import type { RegisterBody, LoginBody } from '@/modules/auth/schemas/index.js'
 
 export async function registerUser(db: Db, body: RegisterBody) {
   const existing = await db.query.users.findFirst({ where: eq(users.email, body.email) })

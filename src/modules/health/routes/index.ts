@@ -1,6 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import * as controller from '../controllers/health.controller.js'
+import * as controller from '@/modules/health/controllers/health.controller.js'
 
 const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get('/live', {

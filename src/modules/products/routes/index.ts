@@ -6,9 +6,9 @@ import {
   updateProductBodySchema,
   productQuerySchema,
   productParamsSchema,
-} from '../schemas/index.js'
-import { apiErrorSchema } from '../../../common/schemas/index.js'
-import * as controller from '../controllers/product.controller.js'
+} from '@/modules/products/schemas/index.js'
+import { apiErrorSchema } from '@/common/schemas/index.js'
+import * as controller from '@/modules/products/controllers/product.controller.js'
 
 const productsRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get('/', {

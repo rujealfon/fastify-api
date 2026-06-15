@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm'
-import type { Db } from '../../../db/index.js'
-import { products } from '../../../db/schema/index.js'
-import { NotFoundError } from '../../../common/errors/NotFoundError.js'
-import type { CreateProductBody, UpdateProductBody } from '../schemas/index.js'
+import type { Db } from '@/db/index.js'
+import { products } from '@/db/schema/index.js'
+import { NotFoundError } from '@/common/errors/NotFoundError.js'
+import type { CreateProductBody, UpdateProductBody } from '@/modules/products/schemas/index.js'
 
 const productColumns = {
   id: true,

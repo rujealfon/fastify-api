@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createTestApp, registerAndLogin } from '../fixtures/index.js'
+import { createTestApp, registerAndLogin } from '@/tests/fixtures/index.js'
 import type { FastifyInstance } from 'fastify'
 
 describe('Users API', () => {
