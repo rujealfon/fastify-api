@@ -8,6 +8,7 @@ export const products = pgTable('products', {
   stock: integer('stock').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp('deleted_at'),
 })
 
 export type ProductRow = typeof products.$inferSelect

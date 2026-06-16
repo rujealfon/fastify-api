@@ -1,6 +1,6 @@
 import type { Db } from '@/db/index.js'
 import type { CreateProductBody, UpdateProductBody } from '@/modules/products/schemas/index.js'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { NotFoundError } from '@/common/errors/NotFoundError.js'
 import { products } from '@/db/schema/index.js'
 
@@ -27,6 +27,7 @@ function toProduct(row: {
 export async function findAllProducts(db: Db, page: number, limit: number) {
   const rows = await db.query.products.findMany({
     columns: productColumns,
+    where: isNull(products.deletedAt),
     offset: (page - 1) * limit,
     limit,
   })
@@ -35,7 +36,7 @@ export async function findAllProducts(db: Db, page: number, limit: number) {
 
 export async function findProductById(db: Db, id: string) {
   const row = await db.query.products.findFirst({
-    where: eq(products.id, id),
+    where: and(eq(products.id, id), isNull(products.deletedAt)),
     columns: productColumns,
   })
   if (!row)
@@ -67,5 +68,5 @@ export async function updateProduct(db: Db, id: string, body: UpdateProductBody)
 
 export async function deleteProduct(db: Db, id: string) {
   await findProductById(db, id)
-  await db.delete(products).where(eq(products.id, id))
+  await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, id))
 }
