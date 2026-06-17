@@ -15,13 +15,33 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get('/ready', {
     schema: {
       tags: ['Health'],
-      summary: 'Readiness probe (checks DB connectivity)',
+      summary: 'Readiness probe (checks DB + Redis connectivity)',
       response: {
         200: z.object({ status: z.string() }),
         503: z.object({ status: z.string(), reason: z.string() }),
       },
     },
     handler: controller.readiness,
+  })
+
+  fastify.get('/details', {
+    schema: {
+      tags: ['Health'],
+      summary: 'System details — memory, event loop, pressure status',
+      response: {
+        200: z.object({
+          status: z.string(),
+          memory: z.object({
+            heapUsed: z.number(),
+            rssBytes: z.number(),
+            eventLoopDelay: z.number(),
+            eventLoopUtilized: z.number(),
+          }),
+          underPressure: z.boolean(),
+        }),
+      },
+    },
+    handler: controller.details,
   })
 }
 

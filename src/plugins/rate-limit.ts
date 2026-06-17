@@ -7,6 +7,10 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
     max: 100,
     timeWindow: '15 minutes',
     allowList: ['127.0.0.1'],
+    redis: fastify.redis,
+    keyGenerator: (request) => {
+      return request.headers['x-forwarded-for'] as string ?? request.ip
+    },
   })
 }
 

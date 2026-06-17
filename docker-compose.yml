@@ -16,6 +16,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: fastify_redis
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   app:
     build:
       context: .
@@ -25,12 +39,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       PORT: 3000
       HOST: 0.0.0.0
       NODE_ENV: development
       DATABASE_URL: postgres://postgres:password@postgres:5432/fastify_dev
       JWT_SECRET: change_this_to_a_random_string_at_least_32_characters
+      REDIS_URL: redis://redis:6379
+      COOKIE_SECRET: ''
+      OTEL_ENDPOINT: ''
       LOG_LEVEL: info
     ports:
       - '3000:3000'
@@ -75,3 +94,4 @@ services:
 volumes:
   postgres_data:
   pgadmin_data:
+  redis_data:

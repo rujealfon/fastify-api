@@ -11,12 +11,20 @@ import authRoutes from './modules/auth/routes/index.js'
 import healthRoutes from './modules/health/routes/index.js'
 import productsRoutes from './modules/products/routes/index.js'
 import usersRoutes from './modules/users/routes/index.js'
+import compressPlugin from './plugins/compress.js'
+import cookiePlugin from './plugins/cookie.js'
 import corsPlugin from './plugins/cors.js'
 import dbPlugin from './plugins/db.js'
 import helmetPlugin from './plugins/helmet.js'
 import jwtPlugin from './plugins/jwt.js'
+import metricsPlugin from './plugins/metrics.js'
+import multipartPlugin from './plugins/multipart.js'
 import rateLimitPlugin from './plugins/rate-limit.js'
+import redisPlugin from './plugins/redis.js'
+import requestContextPlugin from './plugins/request-context.js'
 import scalarPlugin from './plugins/scalar.js'
+import sensiblePlugin from './plugins/sensible.js'
+import underPressurePlugin from './plugins/under-pressure.js'
 
 export async function buildApp() {
   const fastify = Fastify({
@@ -39,12 +47,34 @@ export async function buildApp() {
     dotenv: true,
   })
 
-  // Infrastructure
+  // Core utilities
+  await fastify.register(sensiblePlugin)
+
+  // Security & transport
   await fastify.register(helmetPlugin)
-  await fastify.register(scalarPlugin)
+  await fastify.register(compressPlugin)
   await fastify.register(corsPlugin)
+  await fastify.register(cookiePlugin)
+
+  // API docs
+  await fastify.register(scalarPlugin)
+
+  // Data layer
+  await fastify.register(redisPlugin)
   await fastify.register(rateLimitPlugin)
   await fastify.register(dbPlugin)
+
+  // Reliability
+  await fastify.register(underPressurePlugin)
+
+  // Request lifecycle
+  await fastify.register(multipartPlugin)
+  await fastify.register(requestContextPlugin)
+
+  // Observability
+  await fastify.register(metricsPlugin)
+
+  // Auth
   await fastify.register(jwtPlugin)
   await fastify.register(authDecorator)
   await fastify.register(requestIdHook)
