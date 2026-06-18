@@ -1,91 +1,31 @@
-import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { z } from 'zod'
-import { apiErrorSchema } from '@/common/schemas/index.js'
-import * as controller from '@/modules/users/controllers/user.controller.js'
-import {
-  createUserBodySchema,
-  updateUserBodySchema,
-  userParamsSchema,
-  userQuerySchema,
-  userSchema,
-} from '@/modules/users/schemas/index.js'
+import { usersSchema } from '@/contract/schemas/users.js'
+import * as userService from '@/modules/users/services/user.service.js'
+import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
-const usersRoutes: FastifyPluginAsyncZod = async (fastify) => {
-  fastify.get('/', {
-    schema: {
-      tags: ['Users'],
-      summary: 'List all users',
-      security: [{ bearerAuth: [] }],
-      querystring: userQuerySchema,
-      response: {
-        200: z.object({
-          data: z.array(userSchema),
-          meta: z.object({ page: z.number(), limit: z.number(), total: z.number() }),
-        }),
-      },
-    },
-    preHandler: [fastify.authenticate],
-    handler: controller.getUsers,
-  })
+export default createFastifyRpcPlugin(usersSchema, {
+  list: async ({ query, request }) => {
+    const { page, limit } = query
+    const data = await userService.findAllUsers(request.server.db, page, limit)
+    return { status: 200 as const, body: { data, meta: { page, limit, total: data.length } } }
+  },
 
-  fastify.get('/:id', {
-    schema: {
-      tags: ['Users'],
-      summary: 'Get a user by ID',
-      security: [{ bearerAuth: [] }],
-      params: userParamsSchema,
-      response: {
-        200: z.object({ data: userSchema }),
-        404: apiErrorSchema,
-      },
-    },
-    preHandler: [fastify.authenticate],
-    handler: controller.getUserById,
-  })
+  get: async ({ params, request }) => {
+    const user = await userService.findUserById(request.server.db, params.id)
+    return { status: 200 as const, body: { data: user } }
+  },
 
-  fastify.post('/', {
-    schema: {
-      tags: ['Users'],
-      summary: 'Create a new user',
-      body: createUserBodySchema,
-      response: {
-        201: z.object({ data: userSchema }),
-        409: apiErrorSchema,
-      },
-    },
-    handler: controller.createUser,
-  })
+  create: async ({ body, request }) => {
+    const user = await userService.createUser(request.server.db, body)
+    return { status: 201 as const, body: { data: user } }
+  },
 
-  fastify.patch('/:id', {
-    schema: {
-      tags: ['Users'],
-      summary: 'Update a user',
-      security: [{ bearerAuth: [] }],
-      params: userParamsSchema,
-      body: updateUserBodySchema,
-      response: {
-        200: z.object({ data: userSchema }),
-        404: apiErrorSchema,
-      },
-    },
-    preHandler: [fastify.authenticate],
-    handler: controller.updateUser,
-  })
+  update: async ({ params, body, request }) => {
+    const user = await userService.updateUser(request.server.db, params.id, body)
+    return { status: 200 as const, body: { data: user } }
+  },
 
-  fastify.delete('/:id', {
-    schema: {
-      tags: ['Users'],
-      summary: 'Delete a user',
-      security: [{ bearerAuth: [] }],
-      params: userParamsSchema,
-      response: {
-        204: z.null(),
-        404: apiErrorSchema,
-      },
-    },
-    preHandler: [fastify.authenticate],
-    handler: controller.deleteUser,
-  })
-}
-
-export default usersRoutes
+  delete: async ({ params, request }) => {
+    await userService.deleteUser(request.server.db, params.id)
+    return { status: 204 as const, body: null }
+  },
+})

@@ -1,32 +1,16 @@
-import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { z } from 'zod'
-import * as controller from '@/modules/auth/controllers/auth.controller.js'
-import { authTokensSchema, authUserSchema, loginBodySchema, registerBodySchema } from '@/modules/auth/schemas/index.js'
+import { authSchema } from '@/contract/schemas/auth.js'
+import * as authService from '@/modules/auth/services/auth.service.js'
+import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
-const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
-  fastify.post('/register', {
-    schema: {
-      tags: ['Auth'],
-      summary: 'Register a new user',
-      body: registerBodySchema,
-      response: {
-        201: z.object({ data: authUserSchema }),
-      },
-    },
-    handler: controller.register,
-  })
+export default createFastifyRpcPlugin(authSchema, {
+  register: async ({ body, request }) => {
+    const user = await authService.registerUser(request.server.db, body)
+    return { status: 201 as const, body: { data: user } }
+  },
 
-  fastify.post('/login', {
-    schema: {
-      tags: ['Auth'],
-      summary: 'Login and receive a JWT',
-      body: loginBodySchema,
-      response: {
-        200: z.object({ data: authTokensSchema }),
-      },
-    },
-    handler: controller.login,
-  })
-}
-
-export default authRoutes
+  login: async ({ body, request, reply }) => {
+    const user = await authService.loginUser(request.server.db, body)
+    const token = await reply.jwtSign({ sub: user.id, email: user.email })
+    return { status: 200 as const, body: { data: { token } } }
+  },
+})
