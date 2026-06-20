@@ -58,8 +58,7 @@ src/
 │   └── <domain>/
 │       ├── schemas/index.ts      # Zod schemas → types via z.infer<>
 │       ├── services/             # Business logic + DB queries (no Fastify imports)
-│       ├── controllers/          # Route handlers (thin — delegates to services)
-│       └── routes/index.ts       # Fastify plugin: schema + handler wiring
+│       └── routes/index.ts       # Fastify plugin: schema + handler wiring (controllers/ optional)
 └── tests/
     ├── fixtures/                 # createTestApp(), registerAndLogin() helpers
     └── modules/                  # Integration tests per module
