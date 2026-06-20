@@ -3,6 +3,9 @@ import underPressure from '@fastify/under-pressure'
 import fp from 'fastify-plugin'
 
 const underPressurePlugin: FastifyPluginAsync = async (fastify) => {
+  if (fastify.config.NODE_ENV === 'test')
+    return
+
   await fastify.register(underPressure, {
     maxEventLoopDelay: 1000,
     maxHeapUsedBytes: 200 * 1024 * 1024,

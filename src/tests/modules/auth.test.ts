@@ -1,16 +1,20 @@
 import type { FastifyInstance } from 'fastify'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp } from '@/tests/fixtures/index.js'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { createTestApp, resetDb } from '@/tests/fixtures/index.js'
 
 describe('auth API', () => {
   let app: FastifyInstance
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     app = await createTestApp()
   })
 
-  afterEach(async () => {
+  afterAll(async () => {
     await app.close()
+  })
+
+  beforeEach(async () => {
+    await resetDb(app)
   })
 
   it('pOST /api/v1/auth/register creates a user', async () => {

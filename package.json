@@ -8,7 +8,7 @@
 		"db:migrate": "docker exec fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate",
 		"lint": "docker exec fastify_app nubx eslint src",
 		"lint:fix": "docker exec fastify_app nubx eslint src --fix",
-		"test:unit": "docker exec fastify_app nubx vitest run"
+		"test:unit": "docker exec -e NODE_ENV=test fastify_app nubx vitest run"
 	},
 	"dependencies": {
 		"@fastify/compress": "^9.0.0",
