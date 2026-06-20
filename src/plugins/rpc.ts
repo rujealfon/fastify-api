@@ -41,7 +41,7 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
           ...(route.body !== undefined && { body: route.body }),
           response: route.responses,
         } as any,
-        preHandler: route.auth ? [fastify.authenticate] : undefined,
+        preValidation: route.auth ? [fastify.authenticate] : undefined,
         handler: async (request, reply) => {
           const result = await handler({
             query: request.query,
