@@ -18,6 +18,7 @@ Application source code. Everything here compiles to `../dist/` via `tsc && tsc-
 | `db/` | Drizzle ORM client factory and all table schema definitions |
 | `plugins/` | One Fastify plugin file per concern (cors, redis, rate-limit, compress, …) |
 | `common/` | Cross-cutting utilities: decorators, error classes, hooks, shared Zod schemas |
+| `contract/` | RPC contract layer — `RouteMap` schemas, `createApiClient`, shared between server and client |
 | `modules/` | Domain modules — each contains schemas, services, controllers, routes |
 | `tests/` | Integration tests (Vitest) and shared test helpers |
 | `utils/` | Stateless helper functions (no framework dependencies) |
