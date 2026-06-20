@@ -24,6 +24,15 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - uses: actions/checkout@v4
@@ -47,10 +56,11 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/fastify_test
 
       - name: Run tests
-        run: nub run test
+        run: nubx vitest run
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/fastify_test
           JWT_SECRET: ci_test_secret_that_is_at_least_32_characters
+          REDIS_URL: redis://localhost:6379
           NODE_ENV: test
 
       - name: Build
