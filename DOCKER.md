@@ -46,7 +46,7 @@ docker-compose ps
 Tables don't exist yet. Apply the migrations once:
 
 ```bash
-pnpm db:migrate:docker
+pnpm db:migrate
 ```
 
 Expected output:
@@ -120,7 +120,7 @@ After editing a file in `src/db/schema/`, generate a new migration then apply it
 pnpm db:generate
 
 # 2. Apply it to the running Docker database
-pnpm db:migrate:docker
+pnpm db:migrate
 ```
 
 ---

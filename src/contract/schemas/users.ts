@@ -13,6 +13,7 @@ export const usersSchema = {
   list: {
     method: 'GET' as const,
     path: '/api/v1/users',
+    tags: ['Users'],
     auth: true,
     query: paginationQuerySchema,
     responses: {
@@ -22,6 +23,7 @@ export const usersSchema = {
   get: {
     method: 'GET' as const,
     path: '/api/v1/users/:id',
+    tags: ['Users'],
     auth: true,
     params: uuidParamSchema,
     responses: {
@@ -32,6 +34,7 @@ export const usersSchema = {
   create: {
     method: 'POST' as const,
     path: '/api/v1/users',
+    tags: ['Users'],
     body: createUserBodySchema,
     responses: {
       201: z.object({ data: userSchema }),
@@ -41,6 +44,7 @@ export const usersSchema = {
   update: {
     method: 'PATCH' as const,
     path: '/api/v1/users/:id',
+    tags: ['Users'],
     auth: true,
     params: uuidParamSchema,
     body: updateUserBodySchema,
@@ -52,6 +56,7 @@ export const usersSchema = {
   delete: {
     method: 'DELETE' as const,
     path: '/api/v1/users/:id',
+    tags: ['Users'],
     auth: true,
     params: uuidParamSchema,
     responses: {

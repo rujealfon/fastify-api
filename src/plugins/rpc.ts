@@ -35,6 +35,7 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
         method: route.method as any,
         url: route.path,
         schema: {
+          ...(route.tags !== undefined && { tags: route.tags }),
           ...(route.query !== undefined && { querystring: route.query }),
           ...(route.params !== undefined && { params: route.params }),
           ...(route.body !== undefined && { body: route.body }),

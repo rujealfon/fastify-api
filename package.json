@@ -4,10 +4,10 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsc && tsc-alias",
-		"db:generate": "drizzle-kit generate",
-		"db:migrate:docker": "docker exec fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate",
-		"lint": "eslint src",
-		"format": "eslint src --fix"
+		"db:generate": "docker exec fastify_drizzle_studio nubx drizzle-kit generate",
+		"db:migrate": "docker exec fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate",
+		"lint": "docker exec fastify_app nubx eslint src",
+		"lint:fix": "docker exec fastify_app nubx eslint src --fix"
 	},
 	"dependencies": {
 		"@fastify/compress": "^9.0.0",
@@ -41,12 +41,10 @@
 	},
 	"devDependencies": {
 		"@antfu/eslint-config": "^9.0.0",
-		"@types/bcryptjs": "^3.0.0",
 		"@types/node": "^25.9.3",
 		"drizzle-kit": "^0.31.10",
 		"eslint": "^10.5.0",
 		"tsc-alias": "^1.8.17",
-		"tsx": "^4.22.4",
 		"typescript": "^5.9.3",
 		"vitest": "^4.1.8"
 	}

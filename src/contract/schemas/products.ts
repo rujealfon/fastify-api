@@ -13,6 +13,7 @@ export const productsSchema = {
   list: {
     method: 'GET' as const,
     path: '/api/v1/products',
+    tags: ['Products'],
     auth: true,
     query: paginationQuerySchema,
     responses: {
@@ -22,6 +23,7 @@ export const productsSchema = {
   get: {
     method: 'GET' as const,
     path: '/api/v1/products/:id',
+    tags: ['Products'],
     auth: true,
     params: uuidParamSchema,
     responses: {
@@ -32,6 +34,7 @@ export const productsSchema = {
   create: {
     method: 'POST' as const,
     path: '/api/v1/products',
+    tags: ['Products'],
     auth: true,
     body: createProductBodySchema,
     responses: {
@@ -41,6 +44,7 @@ export const productsSchema = {
   update: {
     method: 'PATCH' as const,
     path: '/api/v1/products/:id',
+    tags: ['Products'],
     auth: true,
     params: uuidParamSchema,
     body: updateProductBodySchema,
@@ -52,6 +56,7 @@ export const productsSchema = {
   delete: {
     method: 'DELETE' as const,
     path: '/api/v1/products/:id',
+    tags: ['Products'],
     auth: true,
     params: uuidParamSchema,
     responses: {

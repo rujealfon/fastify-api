@@ -97,9 +97,9 @@ The [Scalar API reference](https://scalar.com) is served at `http://localhost:30
 |---|---|
 | `pnpm build` | Compile TypeScript to `dist/` |
 | `pnpm db:generate` | Generate a migration file after schema changes |
-| `pnpm db:migrate:docker` | Apply pending migrations inside the Docker container |
+| `pnpm db:migrate` | Apply pending migrations inside the Docker container |
 | `pnpm lint` | Lint with ESLint |
-| `pnpm format` | Auto-fix lint issues |
+| `pnpm lint:fix` | Auto-fix lint issues |
 
 ## API Endpoints
 

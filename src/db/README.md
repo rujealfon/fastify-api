@@ -24,7 +24,7 @@ Migrations live in `../../migrations/` and are committed to version control.
 pnpm db:generate
 
 # Apply migrations inside the running Docker container:
-pnpm db:migrate:docker
+pnpm db:migrate
 ```
 
 ## Adding a new table

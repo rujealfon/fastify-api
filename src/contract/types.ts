@@ -21,6 +21,7 @@ export type RouteMap = Record<string, {
   method: HttpMethod
   path: string
   auth?: boolean
+  tags?: string[]
   query?: z.ZodType
   params?: z.ZodType
   body?: z.ZodType

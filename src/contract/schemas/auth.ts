@@ -11,6 +11,7 @@ export const authSchema = {
   register: {
     method: 'POST' as const,
     path: '/api/v1/auth/register',
+    tags: ['Auth'],
     body: registerBodySchema,
     responses: {
       201: z.object({ data: authUserSchema }),
@@ -19,6 +20,7 @@ export const authSchema = {
   login: {
     method: 'POST' as const,
     path: '/api/v1/auth/login',
+    tags: ['Auth'],
     body: loginBodySchema,
     responses: {
       200: z.object({ data: authTokensSchema }),
