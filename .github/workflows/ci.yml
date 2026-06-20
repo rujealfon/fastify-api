@@ -28,32 +28,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: '22'
+
+      - name: Install nub
+        run: npm install -g @nubjs/nub
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: nub install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: nubx eslint src
 
       - name: Run migrations
-        run: pnpm db:migrate
+        run: nubx drizzle-kit migrate
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/fastify_test
 
       - name: Run tests
-        run: pnpm test
+        run: nub run test
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/fastify_test
           JWT_SECRET: ci_test_secret_that_is_at_least_32_characters
           NODE_ENV: test
 
       - name: Build
-        run: pnpm build
+        run: nub run build
