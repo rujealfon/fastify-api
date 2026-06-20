@@ -10,13 +10,13 @@ describe('users API', () => {
     app = await createTestApp()
   })
 
-  afterAll(async () => {
-    await app.close()
-  })
-
   beforeEach(async () => {
     await resetDb(app)
     token = await registerAndLogin(app)
+  })
+
+  afterAll(async () => {
+    await app.close()
   })
 
   it('gET /api/v1/users requires auth', async () => {

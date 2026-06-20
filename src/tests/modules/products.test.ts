@@ -10,13 +10,13 @@ describe('products API', () => {
     app = await createTestApp()
   })
 
-  afterAll(async () => {
-    await app.close()
-  })
-
   beforeEach(async () => {
     await resetDb(app)
     token = await registerAndLogin(app)
+  })
+
+  afterAll(async () => {
+    await app.close()
   })
 
   it('pOST /api/v1/products creates a product', async () => {

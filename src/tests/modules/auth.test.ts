@@ -9,12 +9,12 @@ describe('auth API', () => {
     app = await createTestApp()
   })
 
-  afterAll(async () => {
-    await app.close()
-  })
-
   beforeEach(async () => {
     await resetDb(app)
+  })
+
+  afterAll(async () => {
+    await app.close()
   })
 
   it('pOST /api/v1/auth/register creates a user', async () => {
