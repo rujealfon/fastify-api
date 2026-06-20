@@ -15,8 +15,9 @@ A production-ready REST API built with **Fastify 5**, **TypeScript**, **PostgreS
 | API Docs | [Scalar](https://scalar.com) + [@fastify/swagger](https://github.com/fastify/fastify-swagger) (OpenAPI 3.0) |
 | Metrics | [prom-client](https://github.com/siimon/prom-client) — Prometheus endpoint at `/metrics` |
 | Tracing | [OpenTelemetry](https://opentelemetry.io/) (OTLP HTTP, optional via `OTEL_ENDPOINT`) |
+| RPC | Contract-first RPC — shared schemas, `createFastifyRpcPlugin`, type-safe `createApiClient` |
 | Testing | [Vitest](https://vitest.dev) |
-| Package Manager | pnpm |
+| Package Manager | [nub](https://nub.sh) (pnpm under the hood) |
 
 ## Project Structure
 
@@ -41,7 +42,13 @@ src/
 │   ├── jwt.ts                    # @fastify/jwt
 │   ├── db.ts                     # Decorates fastify.db
 │   ├── metrics.ts                # prom-client — /metrics endpoint
-│   └── scalar.ts                 # @fastify/swagger + Scalar UI
+│   ├── scalar.ts                 # @fastify/swagger + Scalar UI
+│   └── rpc.ts                    # createFastifyRpcPlugin — registers RouteMap as Fastify routes
+├── contract/                     # RPC contract layer (shared between server and client)
+│   ├── types.ts                  # RouteSchema<> (generic typed) + RouteMap (plain record)
+│   ├── client.ts                 # createApiClient — type-safe fetch client + RpcError
+│   ├── index.ts
+│   └── schemas/                  # Per-domain route schemas (auth, users, products)
 ├── common/                       # Cross-cutting concerns shared across all modules
 │   ├── decorators/               # fastify.authenticate
 │   ├── errors/                   # AppError hierarchy (404, 401, 409, 422)
@@ -63,7 +70,7 @@ src/
 ### Prerequisites
 
 - Docker
-- pnpm 11+ (for generating migrations locally)
+- [nub CLI](https://nub.sh) (`npm i -g nub`)
 
 See [DOCKER.md](DOCKER.md) for the full step-by-step setup.
 
@@ -93,13 +100,16 @@ The [Scalar API reference](https://scalar.com) is served at `http://localhost:30
 
 ## Available Scripts
 
+All scripts run via `nub` (or `nubx` inside containers). See [package.json](package.json) for the full list.
+
 | Script | Description |
 |---|---|
-| `pnpm build` | Compile TypeScript to `dist/` |
-| `pnpm db:generate` | Generate a migration file after schema changes |
-| `pnpm db:migrate` | Apply pending migrations inside the Docker container |
-| `pnpm lint` | Lint with ESLint |
-| `pnpm lint:fix` | Auto-fix lint issues |
+| `nub build` | Compile TypeScript to `dist/` |
+| `nub db:generate` | Generate a migration file after schema changes (runs inside the `drizzle-studio` container via `nubx`) |
+| `nub db:migrate` | Apply pending migrations inside the Docker container |
+| `nub lint` | Lint with ESLint (runs inside the `app` container via `nubx`) |
+| `nub lint:fix` | Auto-fix lint issues |
+| `nub test:unit` | Run unit tests inside the `app` container |
 
 ## API Endpoints
 
@@ -180,8 +190,30 @@ curl http://localhost:3000/api/v1/users \
 curl http://localhost:3000/metrics
 ```
 
+## RPC Layer
+
+Routes are defined once in `src/contract/schemas/` as a `RouteMap` — a plain object mapping route names to their method, path, Zod schemas, and auth flag. This contract is shared between the server and any client.
+
+**Server** — `createFastifyRpcPlugin(schema, handlers)` registers all routes on a Fastify instance. Handlers receive fully-typed `{ query, params, body, request, reply }` and must return a typed `{ status, body }` union. Each route schema accepts an optional `tags` array for OpenAPI grouping in the Scalar UI.
+
+**Client** — `createApiClient(baseUrl, { getToken })` returns a namespaced client (`client.users.list(...)`, `client.auth.login(...)`) backed by native `fetch`. All inputs and return types are inferred from the same contract schemas, so a schema change surfaces as a type error on both sides.
+
+```ts
+// Server
+const plugin = createFastifyRpcPlugin(usersSchema, {
+  list: async ({ query }) => ({ status: 200, body: await userService.list(query) }),
+})
+
+// Client (e.g. frontend or test)
+const api = createApiClient('http://localhost:3000', { getToken: () => token })
+const users = await api.users.list({ query: { page: 1, limit: 10 } })
+```
+
+Errors from the server surface as `RpcError` (with `.status` and `.data`) on the client.
+
 ## Architecture Notes
 
+- **Contract-first RPC** — `src/contract/` is the single source of truth for route shapes. `createFastifyRpcPlugin` wires the server; `createApiClient` wires the client. A schema change is a type error on both sides simultaneously.
 - **Plugin registration order** in `app.ts` is intentional: `env` must be first (all plugins read `fastify.config`), `redis` must precede `rate-limit` (Redis store), `request-context` must precede `auth-decorator` and `request-id` hook (context must exist before being written to).
 - **Zod is the single source of truth** for types — no manual interfaces. All types are derived via `z.infer<>` from schemas in each module's `schemas/index.ts`.
 - **Services have no Fastify imports** — they receive `db` as a parameter, making them independently testable.
