@@ -1,5 +1,5 @@
 import type { RouteMap } from '@/contract/types.js'
-import { z } from 'zod'
+import { apiSuccessSchema } from '@/common/schemas/index.js'
 import {
   authTokensSchema,
   authUserSchema,
@@ -14,7 +14,7 @@ export const authSchema = {
     tags: ['Auth'],
     body: registerBodySchema,
     responses: {
-      201: z.object({ data: authUserSchema }),
+      201: apiSuccessSchema(authUserSchema),
     },
   },
   login: {
@@ -23,7 +23,7 @@ export const authSchema = {
     tags: ['Auth'],
     body: loginBodySchema,
     responses: {
-      200: z.object({ data: authTokensSchema }),
+      200: apiSuccessSchema(authTokensSchema),
     },
   },
 } satisfies RouteMap

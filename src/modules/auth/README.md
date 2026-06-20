@@ -15,10 +15,10 @@ Authentication module — user registration and login.
 
 ```json
 // Body
-{ "name": "Alice", "email": "alice@example.com", "password": "secret1234" }
+{ "email": "alice@example.com", "password": "secret1234" }
 
 // 201 Response
-{ "data": { "id": "<uuid>", "name": "Alice", "email": "alice@example.com" } }
+{ "success": true, "data": { "id": "<uuid>", "email": "alice@example.com" } }
 ```
 
 ### POST /login
@@ -28,7 +28,7 @@ Authentication module — user registration and login.
 { "email": "alice@example.com", "password": "secret1234" }
 
 // 200 Response
-{ "data": { "token": "<jwt>" } }
+{ "success": true, "data": { "token": "<jwt>" } }
 ```
 
 ## JWT payload

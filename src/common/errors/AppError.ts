@@ -10,9 +10,11 @@ export class AppError extends Error {
 
   toJSON() {
     return {
-      statusCode: this.statusCode,
-      code: this.code,
-      message: this.message,
+      success: false as const,
+      error: {
+        code: this.code,
+        message: this.message,
+      },
     }
   }
 }

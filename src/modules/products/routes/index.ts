@@ -6,22 +6,22 @@ export default createFastifyRpcPlugin(productsSchema, {
   list: async ({ query, request }) => {
     const { page, limit } = query
     const data = await productService.findAllProducts(request.server.db, page, limit)
-    return { status: 200 as const, body: { data, meta: { page, limit, total: data.length } } }
+    return { status: 200 as const, body: { success: true as const, data, pagination: { page, limit, total: data.length } } }
   },
 
   get: async ({ params, request }) => {
     const product = await productService.findProductById(request.server.db, params.id)
-    return { status: 200 as const, body: { data: product } }
+    return { status: 200 as const, body: { success: true as const, data: product } }
   },
 
   create: async ({ body, request }) => {
     const product = await productService.createProduct(request.server.db, body)
-    return { status: 201 as const, body: { data: product } }
+    return { status: 201 as const, body: { success: true as const, data: product } }
   },
 
   update: async ({ params, body, request }) => {
     const product = await productService.updateProduct(request.server.db, params.id, body)
-    return { status: 200 as const, body: { data: product } }
+    return { status: 200 as const, body: { success: true as const, data: product } }
   },
 
   delete: async ({ params, request }) => {

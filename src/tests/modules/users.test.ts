@@ -64,10 +64,10 @@ describe('users API', () => {
         headers: { authorization: `Bearer ${token}` },
       })
       expect(res.statusCode).toBe(200)
-      const body = res.json<{ data: unknown[], meta: { page: number, limit: number } }>()
+      const body = res.json<{ data: unknown[], pagination: { page: number, limit: number } }>()
       expect(Array.isArray(body.data)).toBe(true)
-      expect(body.meta.page).toBe(1)
-      expect(body.meta.limit).toBe(10)
+      expect(body.pagination.page).toBe(1)
+      expect(body.pagination.limit).toBe(10)
     })
 
     it('returns users with correct shape including profile', async () => {
@@ -123,10 +123,10 @@ describe('users API', () => {
         headers: { authorization: `Bearer ${token}` },
       })
       expect(res.statusCode).toBe(200)
-      const body = res.json<{ data: unknown[], meta: { page: number, limit: number } }>()
+      const body = res.json<{ data: unknown[], pagination: { page: number, limit: number } }>()
       expect(body.data.length).toBeLessThanOrEqual(2)
-      expect(body.meta.page).toBe(1)
-      expect(body.meta.limit).toBe(2)
+      expect(body.pagination.page).toBe(1)
+      expect(body.pagination.limit).toBe(2)
     })
   })
 

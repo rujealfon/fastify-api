@@ -87,22 +87,30 @@ export async function buildApp() {
     const err = error as Error & { validation?: Array<Record<string, unknown>> }
     if (err.validation) {
       return reply.status(400).send({
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'Validation failed',
-        errors: err.validation.map((issue) => {
-          const path = Array.isArray(issue.path)
-            ? (issue.path as (string | number)[]).join('.')
-            : (issue.instancePath as string | undefined ?? '').replace(/^\//, '')
-          return { path, message: issue.message }
-        }),
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          fields: err.validation.map((issue) => {
+            const path = Array.isArray(issue.path)
+              ? (issue.path as (string | number)[])
+              : (issue.instancePath as string | undefined ?? '').replace(/^\//, '').split('/').filter(Boolean)
+            return {
+              path,
+              code: (issue.keyword as string | undefined) ?? 'invalid',
+              message: (issue.message as string | undefined) ?? 'Invalid value',
+            }
+          }),
+        },
       })
     }
     request.log.error({ err }, 'unhandled error')
     return reply.status(500).send({
-      statusCode: 500,
-      code: 'INTERNAL_ERROR',
-      message: 'Internal server error',
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error',
+      },
     })
   })
 

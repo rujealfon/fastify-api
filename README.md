@@ -179,7 +179,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"alice@example.com","password":"secret1234"}'
-# → {"data":{"token":"<jwt>"}}
+# → {"success":true,"data":{"token":"<jwt>"}}
 
 # List users (authenticated)
 curl http://localhost:3000/api/v1/users \

@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
+import { apiErrorSchema, apiSuccessSchema } from '@/common/schemas/index.js'
 import * as controller from '@/modules/health/controllers/health.controller.js'
 
 const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
@@ -7,7 +8,9 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
     schema: {
       tags: ['Health'],
       summary: 'Liveness probe',
-      response: { 200: z.object({ status: z.string() }) },
+      response: {
+        200: apiSuccessSchema(z.object({ status: z.string() })),
+      },
     },
     handler: controller.liveness,
   })
@@ -17,8 +20,8 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
       tags: ['Health'],
       summary: 'Readiness probe (checks DB + Redis connectivity)',
       response: {
-        200: z.object({ status: z.string() }),
-        503: z.object({ status: z.string(), reason: z.string() }),
+        200: apiSuccessSchema(z.object({ status: z.string() })),
+        503: apiErrorSchema,
       },
     },
     handler: controller.readiness,
@@ -29,7 +32,7 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
       tags: ['Health'],
       summary: 'System details — memory, event loop, pressure status',
       response: {
-        200: z.object({
+        200: apiSuccessSchema(z.object({
           status: z.string(),
           memory: z.object({
             heapUsed: z.number(),
@@ -38,7 +41,7 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
             eventLoopUtilized: z.number(),
           }),
           underPressure: z.boolean(),
-        }),
+        })),
       },
     },
     handler: controller.details,

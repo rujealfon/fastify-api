@@ -16,6 +16,7 @@ RPC contract layer. Defines route schemas once and shares them between the serve
 ```ts
 import { z } from 'zod'
 import type { RouteMap } from '@/contract/types.js'
+import { apiErrorSchema, apiListSchema, apiSuccessSchema } from '@/common/schemas/index.js'
 
 export const usersSchema = {
   list: {
@@ -23,8 +24,20 @@ export const usersSchema = {
     path: '/api/v1/users',
     auth: true,
     tags: ['Users'],
-    query: z.object({ page: z.number().optional(), limit: z.number().optional() }),
-    responses: { 200: z.object({ data: z.array(userSchema) }) },
+    query: paginationQuerySchema,
+    responses: {
+      200: apiListSchema(userSchema),
+    },
+  },
+  get: {
+    method: 'GET',
+    path: '/api/v1/users/:id',
+    auth: true,
+    params: uuidParamSchema,
+    responses: {
+      200: apiSuccessSchema(userSchema),
+      404: apiErrorSchema,
+    },
   },
 } satisfies RouteMap
 ```

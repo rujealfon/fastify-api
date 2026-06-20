@@ -4,12 +4,16 @@ Shared Zod schemas used across multiple modules. No domain-specific logic.
 
 ## Exports
 
-| Schema / Type | Shape | Used for |
+| Schema / helper | Shape | Used for |
 |---|---|---|
 | `paginationQuerySchema` | `{ page: number, limit: number }` | `?page=1&limit=10` query params on all list endpoints |
 | `uuidParamSchema` | `{ id: string (UUID) }` | `:id` path param on all resource endpoints |
-| `apiErrorSchema` | `{ statusCode, code, message }` | Documenting error responses in route schemas |
+| `paginationSchema` | `{ page, limit, total }` | Pagination metadata in list responses |
+| `apiErrorSchema` | `{ success: false, error: { code, message, fields? } }` | Error responses in route schemas |
+| `apiSuccessSchema(T)` | `{ success: true, data: T, message? }` | Single-item success responses |
+| `apiListSchema(T)` | `{ success: true, data: T[], pagination }` | Paginated list success responses |
 | `PaginationQuery` | `z.infer<typeof paginationQuerySchema>` | — |
+| `Pagination` | `z.infer<typeof paginationSchema>` | — |
 | `UuidParam` | `z.infer<typeof uuidParamSchema>` | — |
 | `ApiError` | `z.infer<typeof apiErrorSchema>` | — |
 

@@ -18,7 +18,7 @@ const authDecorator: FastifyPluginAsync = async (fastify) => {
       }
     }
     catch {
-      reply.status(401).send({ statusCode: 401, code: 'UNAUTHORIZED', message: 'Invalid or missing token' })
+      reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
     }
   })
 }

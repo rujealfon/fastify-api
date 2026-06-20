@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { checkDb, checkRedis } from '@/modules/health/services/health.service.js'
 
 export async function liveness(_request: FastifyRequest, _reply: FastifyReply) {
-  return { status: 'ok' }
+  return { success: true as const, data: { status: 'ok' } }
 }
 
 export async function readiness(request: FastifyRequest, reply: FastifyReply) {
@@ -13,24 +13,30 @@ export async function readiness(request: FastifyRequest, reply: FastifyReply) {
 
   if (!dbOk || !redisOk) {
     return reply.status(503).send({
-      status: 'not_ready',
-      reason: !dbOk ? 'database unreachable' : 'redis unreachable',
+      success: false,
+      error: {
+        code: 'SERVICE_UNAVAILABLE',
+        message: !dbOk ? 'database unreachable' : 'redis unreachable',
+      },
     })
   }
 
-  return { status: 'ready' }
+  return { success: true as const, data: { status: 'ready' } }
 }
 
 export async function details(request: FastifyRequest, _reply: FastifyReply) {
   const memory = request.server.memoryUsage()
   return {
-    status: request.server.isUnderPressure() ? 'degraded' : 'ok',
-    memory: {
-      heapUsed: memory.heapUsed,
-      rssBytes: memory.rssBytes,
-      eventLoopDelay: memory.eventLoopDelay,
-      eventLoopUtilized: memory.eventLoopUtilized,
+    success: true as const,
+    data: {
+      status: request.server.isUnderPressure() ? 'degraded' : 'ok',
+      memory: {
+        heapUsed: memory.heapUsed,
+        rssBytes: memory.rssBytes,
+        eventLoopDelay: memory.eventLoopDelay,
+        eventLoopUtilized: memory.eventLoopUtilized,
+      },
+      underPressure: request.server.isUnderPressure(),
     },
-    underPressure: request.server.isUnderPressure(),
   }
 }
