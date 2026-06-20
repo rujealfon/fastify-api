@@ -1,9 +1,14 @@
+import { sql } from 'drizzle-orm'
 import { buildApp } from '@/app.js'
 
 export async function createTestApp() {
   const app = await buildApp()
   await app.ready()
   return app
+}
+
+export async function resetDb(app: Awaited<ReturnType<typeof createTestApp>>) {
+  await app.db.execute(sql`truncate table products, users restart identity cascade`)
 }
 
 export async function registerAndLogin(

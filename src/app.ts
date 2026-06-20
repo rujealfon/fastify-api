@@ -102,9 +102,9 @@ export async function buildApp() {
 
   // Routes
   await fastify.register(healthRoutes, { prefix: '/health' })
-  await fastify.register(authRoutes, { prefix: '/api/v1/auth' })
-  await fastify.register(usersRoutes, { prefix: '/api/v1/users' })
-  await fastify.register(productsRoutes, { prefix: '/api/v1/products' })
+  await fastify.register(authRoutes)
+  await fastify.register(usersRoutes)
+  await fastify.register(productsRoutes)
 
   return fastify
 }

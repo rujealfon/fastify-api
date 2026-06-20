@@ -1,92 +1,31 @@
-import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { z } from 'zod'
-import { apiErrorSchema } from '@/common/schemas/index.js'
-import * as controller from '@/modules/products/controllers/product.controller.js'
-import {
-  createProductBodySchema,
-  productParamsSchema,
-  productQuerySchema,
-  productSchema,
-  updateProductBodySchema,
-} from '@/modules/products/schemas/index.js'
+import { productsSchema } from '@/contract/schemas/products.js'
+import * as productService from '@/modules/products/services/product.service.js'
+import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
-const productsRoutes: FastifyPluginAsyncZod = async (fastify) => {
-  fastify.get('/', {
-    schema: {
-      tags: ['Products'],
-      summary: 'List all products',
-      security: [{ bearerAuth: [] }],
-      querystring: productQuerySchema,
-      response: {
-        200: z.object({
-          data: z.array(productSchema),
-          meta: z.object({ page: z.number(), limit: z.number(), total: z.number() }),
-        }),
-      },
-    },
-    preHandler: [fastify.authenticate],
-    handler: controller.getProducts,
-  })
+export default createFastifyRpcPlugin(productsSchema, {
+  list: async ({ query, request }) => {
+    const { page, limit } = query
+    const data = await productService.findAllProducts(request.server.db, page, limit)
+    return { status: 200 as const, body: { data, meta: { page, limit, total: data.length } } }
+  },
 
-  fastify.get('/:id', {
-    schema: {
-      tags: ['Products'],
-      summary: 'Get a product by ID',
-      security: [{ bearerAuth: [] }],
-      params: productParamsSchema,
-      response: {
-        200: z.object({ data: productSchema }),
-        404: apiErrorSchema,
-      },
-    },
-    preHandler: [fastify.authenticate],
-    handler: controller.getProductById,
-  })
+  get: async ({ params, request }) => {
+    const product = await productService.findProductById(request.server.db, params.id)
+    return { status: 200 as const, body: { data: product } }
+  },
 
-  fastify.post('/', {
-    schema: {
-      tags: ['Products'],
-      summary: 'Create a new product',
-      security: [{ bearerAuth: [] }],
-      body: createProductBodySchema,
-      response: {
-        201: z.object({ data: productSchema }),
-      },
-    },
-    preHandler: [fastify.authenticate],
-    handler: controller.createProduct,
-  })
+  create: async ({ body, request }) => {
+    const product = await productService.createProduct(request.server.db, body)
+    return { status: 201 as const, body: { data: product } }
+  },
 
-  fastify.patch('/:id', {
-    schema: {
-      tags: ['Products'],
-      summary: 'Update a product',
-      security: [{ bearerAuth: [] }],
-      params: productParamsSchema,
-      body: updateProductBodySchema,
-      response: {
-        200: z.object({ data: productSchema }),
-        404: apiErrorSchema,
-      },
-    },
-    preHandler: [fastify.authenticate],
-    handler: controller.updateProduct,
-  })
+  update: async ({ params, body, request }) => {
+    const product = await productService.updateProduct(request.server.db, params.id, body)
+    return { status: 200 as const, body: { data: product } }
+  },
 
-  fastify.delete('/:id', {
-    schema: {
-      tags: ['Products'],
-      summary: 'Delete a product',
-      security: [{ bearerAuth: [] }],
-      params: productParamsSchema,
-      response: {
-        204: z.null(),
-        404: apiErrorSchema,
-      },
-    },
-    preHandler: [fastify.authenticate],
-    handler: controller.deleteProduct,
-  })
-}
-
-export default productsRoutes
+  delete: async ({ params, request }) => {
+    await productService.deleteProduct(request.server.db, params.id)
+    return { status: 204 as const, body: null }
+  },
+})

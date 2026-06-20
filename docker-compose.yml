@@ -35,7 +35,7 @@ services:
       context: .
       target: deps
     container_name: fastify_app
-    command: node_modules/.bin/tsx watch src/server.ts
+    command: nub watch src/server.ts
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,6 +56,8 @@ services:
     volumes:
       - ./src:/app/src
       - ./tsconfig.json:/app/tsconfig.json:ro
+      - ./eslint.config.js:/app/eslint.config.js:ro
+      - ./vitest.config.ts:/app/vitest.config.ts:ro
 
   drizzle-studio:
     build:
