@@ -13,7 +13,7 @@ export async function resetDb(app: Awaited<ReturnType<typeof createTestApp>>) {
 
 export async function registerAndLogin(
   app: Awaited<ReturnType<typeof createTestApp>>,
-  user = { name: 'Test User', email: 'test@example.com', password: 'password123' },
+  user = { email: 'test@example.com', password: 'password123' },
 ) {
   await app.inject({
     method: 'POST',

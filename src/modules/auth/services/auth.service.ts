@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { ConflictError } from '@/common/errors/ConflictError.js'
 import { UnauthorizedError } from '@/common/errors/UnauthorizedError.js'
-import { users } from '@/db/schema/index.js'
+import { profiles, users } from '@/db/schema/index.js'
 
 export async function registerUser(db: Db, body: RegisterBody) {
   const existing = await db.query.users.findFirst({ where: eq(users.email, body.email) })
@@ -12,12 +12,17 @@ export async function registerUser(db: Db, body: RegisterBody) {
     throw new ConflictError(`Email '${body.email}' is already registered`)
 
   const passwordHash = await bcrypt.hash(body.password, 12)
-  const [user] = await db
-    .insert(users)
-    .values({ name: body.name, email: body.email, passwordHash })
-    .returning({ id: users.id, name: users.name, email: users.email })
 
-  return user
+  return db.transaction(async (tx) => {
+    const [user] = await tx
+      .insert(users)
+      .values({ email: body.email, passwordHash })
+      .returning({ id: users.id, email: users.email })
+
+    await tx.insert(profiles).values({ userId: user.id })
+
+    return user
+  })
 }
 
 export async function loginUser(db: Db, body: LoginBody) {
@@ -29,5 +34,5 @@ export async function loginUser(db: Db, body: LoginBody) {
   if (!valid)
     throw new UnauthorizedError('Invalid email or password')
 
-  return { id: user.id, email: user.email, name: user.name }
+  return { id: user.id, email: user.email }
 }

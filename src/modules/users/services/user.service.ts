@@ -4,23 +4,60 @@ import bcrypt from 'bcryptjs'
 import { and, eq, isNull } from 'drizzle-orm'
 import { ConflictError } from '@/common/errors/ConflictError.js'
 import { NotFoundError } from '@/common/errors/NotFoundError.js'
-import { users } from '@/db/schema/index.js'
+import { profiles, users } from '@/db/schema/index.js'
 
 const userColumns = {
   id: true,
-  name: true,
   email: true,
   createdAt: true,
   updatedAt: true,
 } as const
 
-function toUser(row: { id: string, name: string, email: string, createdAt: Date, updatedAt: Date }) {
-  return { ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }
+const profileColumns = {
+  firstName: true,
+  lastName: true,
+  avatarUrl: true,
+  bio: true,
+  phoneNumber: true,
+  birthDate: true,
+} as const
+
+interface UserRow {
+  id: string
+  email: string
+  createdAt: Date
+  updatedAt: Date
+  profile: {
+    firstName: string | null
+    lastName: string | null
+    avatarUrl: string | null
+    bio: string | null
+    phoneNumber: string | null
+    birthDate: string | null
+  } | null
+}
+
+function toUser(row: UserRow) {
+  return {
+    id: row.id,
+    email: row.email,
+    profile: row.profile ?? {
+      firstName: null,
+      lastName: null,
+      avatarUrl: null,
+      bio: null,
+      phoneNumber: null,
+      birthDate: null,
+    },
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  }
 }
 
 export async function findAllUsers(db: Db, page: number, limit: number) {
   const rows = await db.query.users.findMany({
     columns: userColumns,
+    with: { profile: { columns: profileColumns } },
     where: isNull(users.deletedAt),
     offset: (page - 1) * limit,
     limit,
@@ -30,8 +67,9 @@ export async function findAllUsers(db: Db, page: number, limit: number) {
 
 export async function findUserById(db: Db, id: string) {
   const row = await db.query.users.findFirst({
-    where: and(eq(users.id, id), isNull(users.deletedAt)),
     columns: userColumns,
+    with: { profile: { columns: profileColumns } },
+    where: and(eq(users.id, id), isNull(users.deletedAt)),
   })
   if (!row)
     throw new NotFoundError('User', id)
@@ -44,23 +82,40 @@ export async function createUser(db: Db, body: CreateUserBody) {
     throw new ConflictError(`Email '${body.email}' is already registered`)
 
   const passwordHash = await bcrypt.hash(body.password, 12)
-  const [row] = await db
-    .insert(users)
-    .values({ name: body.name, email: body.email, passwordHash })
-    .returning({ id: users.id, name: users.name, email: users.email, createdAt: users.createdAt, updatedAt: users.updatedAt })
 
-  return toUser(row)
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(users)
+      .values({ email: body.email, passwordHash })
+      .returning({ id: users.id, email: users.email, createdAt: users.createdAt, updatedAt: users.updatedAt })
+
+    await tx.insert(profiles).values({ userId: row.id })
+
+    return toUser({ ...row, profile: null })
+  })
 }
 
 export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
   await findUserById(db, id)
-  const [row] = await db
-    .update(users)
-    .set({ ...(body.name && { name: body.name }), ...(body.email && { email: body.email }) })
-    .where(eq(users.id, id))
-    .returning({ id: users.id, name: users.name, email: users.email, createdAt: users.createdAt, updatedAt: users.updatedAt })
 
-  return toUser(row)
+  try {
+    await db.transaction(async (tx) => {
+      if (body.email !== undefined) {
+        await tx.update(users).set({ email: body.email }).where(eq(users.id, id))
+      }
+      if (body.profile !== undefined) {
+        await tx.update(profiles).set(body.profile).where(eq(profiles.userId, id))
+      }
+    })
+  }
+  catch (err) {
+    const pgCode = (err as { cause?: { code?: string } })?.cause?.code
+    if (pgCode === '23505')
+      throw new ConflictError(`Email '${body.email}' is already registered`)
+    throw err
+  }
+
+  return findUserById(db, id)
 }
 
 export async function deleteUser(db: Db, id: string) {

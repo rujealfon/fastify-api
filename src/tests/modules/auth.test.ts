@@ -17,61 +17,122 @@ describe('auth API', () => {
     await app.close()
   })
 
-  it('pOST /api/v1/auth/register creates a user', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      payload: { name: 'Alice', email: 'alice@example.com', password: 'password123' },
+  // ── POST /api/v1/auth/register ─────────────────────────────────────────────
+
+  describe('pOST /api/v1/auth/register', () => {
+    it('creates a user and returns id + email', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'alice@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(201)
+      const { data } = res.json<{ data: { id: string, email: string } }>()
+      expect(data.id).toBeDefined()
+      expect(data.email).toBe('alice@example.com')
     })
-    expect(res.statusCode).toBe(201)
-    const body = res.json<{ data: { id: string, email: string } }>()
-    expect(body.data.email).toBe('alice@example.com')
-    expect(body.data.id).toBeDefined()
+
+    it('does not return passwordHash in the response', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'alice@example.com', password: 'password123' },
+      })
+      expect(res.json()).not.toHaveProperty('data.passwordHash')
+    })
+
+    it('returns 409 for duplicate email', async () => {
+      const payload = { email: 'bob@example.com', password: 'password123' }
+      await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload })
+      const res = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload })
+      expect(res.statusCode).toBe(409)
+    })
+
+    it('returns 400 for password shorter than 8 characters', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'charlie@example.com', password: 'short' },
+      })
+      expect(res.statusCode).toBe(400)
+    })
+
+    it('returns 400 for invalid email format', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'not-an-email', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(400)
+    })
+
+    it('returns 400 when email is missing', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { password: 'password123' },
+      })
+      expect(res.statusCode).toBe(400)
+    })
+
+    it('returns 400 when password is missing', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'alice@example.com' },
+      })
+      expect(res.statusCode).toBe(400)
+    })
   })
 
-  it('pOST /api/v1/auth/register rejects duplicate email', async () => {
-    const payload = { name: 'Bob', email: 'bob@example.com', password: 'password123' }
-    await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload })
-    const res = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload })
-    expect(res.statusCode).toBe(409)
-  })
+  // ── POST /api/v1/auth/login ────────────────────────────────────────────────
 
-  it('pOST /api/v1/auth/register rejects weak password', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      payload: { name: 'Charlie', email: 'charlie@example.com', password: 'short' },
+  describe('pOST /api/v1/auth/login', () => {
+    beforeEach(async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'dave@example.com', password: 'password123' },
+      })
     })
-    expect(res.statusCode).toBe(400)
-  })
 
-  it('pOST /api/v1/auth/login returns a token', async () => {
-    await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      payload: { name: 'Dave', email: 'dave@example.com', password: 'password123' },
+    it('returns a JWT token on valid credentials', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: 'dave@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(200)
+      const { data } = res.json<{ data: { token: string } }>()
+      expect(typeof data.token).toBe('string')
+      expect(data.token.length).toBeGreaterThan(0)
     })
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/login',
-      payload: { email: 'dave@example.com', password: 'password123' },
-    })
-    expect(res.statusCode).toBe(200)
-    const body = res.json<{ data: { token: string } }>()
-    expect(body.data.token).toBeDefined()
-  })
 
-  it('pOST /api/v1/auth/login rejects wrong password', async () => {
-    await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      payload: { name: 'Eve', email: 'eve@example.com', password: 'password123' },
+    it('returns 401 for wrong password', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: 'dave@example.com', password: 'wrongpassword' },
+      })
+      expect(res.statusCode).toBe(401)
     })
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/login',
-      payload: { email: 'eve@example.com', password: 'wrongpassword' },
+
+    it('returns 401 for unknown email', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: 'ghost@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(401)
     })
-    expect(res.statusCode).toBe(401)
+
+    it('returns 400 when body is empty', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: {},
+      })
+      expect(res.statusCode).toBe(400)
+    })
   })
 })

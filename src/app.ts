@@ -84,12 +84,18 @@ export async function buildApp() {
     if (error instanceof AppError) {
       return reply.status(error.statusCode).send(error.toJSON())
     }
-    const err = error as Error & { validation?: unknown }
+    const err = error as Error & { validation?: Array<Record<string, unknown>> }
     if (err.validation) {
       return reply.status(400).send({
         statusCode: 400,
         code: 'VALIDATION_ERROR',
-        message: err.message,
+        message: 'Validation failed',
+        errors: err.validation.map((issue) => {
+          const path = Array.isArray(issue.path)
+            ? (issue.path as (string | number)[]).join('.')
+            : (issue.instancePath as string | undefined ?? '').replace(/^\//, '')
+          return { path, message: issue.message }
+        }),
       })
     }
     request.log.error({ err }, 'unhandled error')
