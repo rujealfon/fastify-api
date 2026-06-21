@@ -54,6 +54,7 @@ services:
       COOKIE_SECRET: ''
       OTEL_ENDPOINT: ''
       LOG_LEVEL: info
+      ACCOUNT_RETENTION_DAYS: 90
     ports:
       - '3000:3000'
     volumes:
@@ -89,6 +90,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://postgres:password@postgres:5432/fastify_dev
+      ACCOUNT_RETENTION_DAYS: 90
     restart: unless-stopped
 
   pgadmin:

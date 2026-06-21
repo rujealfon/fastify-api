@@ -1,6 +1,18 @@
+import type { FastifyRequest } from 'fastify'
+import { NotFoundError } from '@/common/errors/NotFoundError.js'
+import { UnauthorizedError } from '@/common/errors/UnauthorizedError.js'
 import { usersSchema } from '@/contract/schemas/users.js'
 import * as userService from '@/modules/users/services/user.service.js'
 import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
+
+function assertSelf(request: FastifyRequest, id: string): string {
+  const actorId = request.requestContext.get('userId')
+  if (!actorId)
+    throw new UnauthorizedError()
+  if (actorId !== id)
+    throw new NotFoundError('User', id)
+  return actorId
+}
 
 export default createFastifyRpcPlugin(usersSchema, {
   list: async ({ query, request }) => {
@@ -20,12 +32,13 @@ export default createFastifyRpcPlugin(usersSchema, {
   },
 
   update: async ({ params, body, request }) => {
+    assertSelf(request, params.id)
     const user = await userService.updateUser(request.server.db, params.id, body)
     return { status: 200 as const, body: { success: true as const, data: user } }
   },
 
   delete: async ({ params, request }) => {
-    const actorId = request.requestContext.get('userId') as string | undefined
+    const actorId = assertSelf(request, params.id)
     await userService.deleteUser(request.server.db, params.id, actorId)
     return { status: 204 as const, body: null }
   },

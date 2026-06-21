@@ -9,6 +9,7 @@ export interface AppConfig {
   REDIS_URL: string
   COOKIE_SECRET: string
   OTEL_ENDPOINT: string
+  ACCOUNT_RETENTION_DAYS: number
 }
 
 export const configSchema = {
@@ -29,5 +30,6 @@ export const configSchema = {
     REDIS_URL: { type: 'string' },
     COOKIE_SECRET: { type: 'string', default: '' },
     OTEL_ENDPOINT: { type: 'string', default: '' },
+    ACCOUNT_RETENTION_DAYS: { type: 'integer', default: 90, minimum: 1 },
   },
 } as const

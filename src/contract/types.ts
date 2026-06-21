@@ -1,4 +1,4 @@
-import type { z } from 'zod'
+import { z } from 'zod'
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
 
@@ -27,3 +27,40 @@ export type RouteMap = Record<string, {
   body?: z.ZodType
   responses: Record<number, z.ZodType>
 }>
+
+const apiErrorFieldSchema = z.object({
+  path: z.array(z.union([z.string(), z.number()])),
+  code: z.string(),
+  message: z.string(),
+})
+
+export const apiErrorSchema = z.object({
+  success: z.literal(false),
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    fields: z.array(apiErrorFieldSchema).optional(),
+  }),
+})
+
+export function apiSuccessSchema<T extends z.ZodType>(dataSchema: T) {
+  return z.object({
+    success: z.literal(true),
+    data: dataSchema,
+    message: z.string().optional(),
+  })
+}
+
+export function apiListSchema<T extends z.ZodType>(itemSchema: T) {
+  return z.object({
+    success: z.literal(true),
+    data: z.array(itemSchema),
+    pagination: z.object({
+      page: z.number().int(),
+      limit: z.number().int(),
+      total: z.number().int(),
+    }),
+  })
+}
+
+export type ApiError = z.infer<typeof apiErrorSchema>

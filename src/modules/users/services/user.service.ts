@@ -6,6 +6,42 @@ import { ConflictError } from '@/common/errors/ConflictError.js'
 import { NotFoundError } from '@/common/errors/NotFoundError.js'
 import { profiles, users } from '@/db/schema/index.js'
 
+const PG_UNIQUE_VIOLATION = '23505'
+
+function accountRetentionDays(): number {
+  const n = Number(process.env.ACCOUNT_RETENTION_DAYS)
+  return Number.isFinite(n) && n > 0 ? n : 90
+}
+
+export function rethrowEmailConflict(err: unknown, email: string): never {
+  const pgCode = (err as { code?: string, cause?: { code?: string } }).code
+    ?? (err as { cause?: { code?: string } }).cause?.code
+  if (pgCode === PG_UNIQUE_VIOLATION)
+    throw new ConflictError(`Email '${email}' is already registered`)
+  throw err
+}
+
+function retentionExpiresAt(deletedAt: Date) {
+  const purgeAt = new Date(deletedAt)
+  purgeAt.setDate(purgeAt.getDate() + accountRetentionDays())
+  return purgeAt
+}
+
+export async function assertEmailAvailableForRegistration(db: Db, email: string) {
+  const rows = await db.query.users.findMany({
+    columns: { deletedAt: true, purgeAt: true },
+    where: eq(users.email, email),
+  })
+  const active = rows.find(row => !row.deletedAt)
+  if (active)
+    throw new ConflictError(`Email '${email}' is already registered`)
+
+  const now = new Date()
+  const recoverable = rows.find(row => (row.purgeAt ?? retentionExpiresAt(row.deletedAt!)) > now)
+  if (recoverable)
+    throw new ConflictError(`Email '${email}' belongs to a recently deleted account. Restore the account instead.`)
+}
+
 const userColumns = {
   id: true,
   email: true,
@@ -77,9 +113,7 @@ export async function findUserById(db: Db, id: string) {
 }
 
 export async function createUser(db: Db, body: CreateUserBody) {
-  const existing = await db.query.users.findFirst({ where: and(eq(users.email, body.email), isNull(users.deletedAt)) })
-  if (existing)
-    throw new ConflictError(`Email '${body.email}' is already registered`)
+  await assertEmailAvailableForRegistration(db, body.email)
 
   const passwordHash = await bcrypt.hash(body.password, 12)
 
@@ -92,33 +126,44 @@ export async function createUser(db: Db, body: CreateUserBody) {
     await tx.insert(profiles).values({ userId: row.id })
 
     return toUser({ ...row, profile: null })
-  })
+  }).catch(err => rethrowEmailConflict(err, body.email))
 }
 
 export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
-  await findUserById(db, id)
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, id), isNull(users.deletedAt)))
+      .limit(1)
+    if (!existing)
+      throw new NotFoundError('User', id)
 
-  try {
-    await db.transaction(async (tx) => {
-      if (body.email !== undefined) {
-        await tx.update(users).set({ email: body.email }).where(eq(users.id, id))
-      }
-      if (body.profile !== undefined) {
-        await tx.update(profiles).set(body.profile).where(eq(profiles.userId, id))
-      }
+    if (body.email !== undefined)
+      await tx.update(users).set({ email: body.email }).where(eq(users.id, id)).catch(err => rethrowEmailConflict(err, body.email!))
+    if (body.profile !== undefined)
+      await tx.update(profiles).set(body.profile).where(eq(profiles.userId, id))
+
+    const [updated] = await tx
+      .select({ id: users.id, email: users.email, createdAt: users.createdAt, updatedAt: users.updatedAt })
+      .from(users)
+      .where(and(eq(users.id, id), isNull(users.deletedAt)))
+      .limit(1)
+    const profile = await tx.query.profiles.findFirst({
+      columns: profileColumns,
+      where: eq(profiles.userId, id),
     })
-  }
-  catch (err) {
-    const pgCode = (err as { cause?: { code?: string } })?.cause?.code
-    if (pgCode === '23505')
-      throw new ConflictError(`Email '${body.email}' is already registered`)
-    throw err
-  }
-
-  return findUserById(db, id)
+    return toUser({ ...updated, profile: profile ?? null })
+  })
 }
 
 export async function deleteUser(db: Db, id: string, deletedBy?: string) {
-  await findUserById(db, id)
-  await db.update(users).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(users.id, id))
+  const deletedAt = new Date()
+  const [deleted] = await db
+    .update(users)
+    .set({ deletedAt, deletedBy: deletedBy ?? null, purgeAt: retentionExpiresAt(deletedAt) })
+    .where(and(eq(users.id, id), isNull(users.deletedAt)))
+    .returning({ id: users.id })
+  if (!deleted)
+    throw new NotFoundError('User', id)
 }

@@ -11,7 +11,7 @@ declare module 'fastify' {
 
 const dbPlugin: FastifyPluginAsync = async (fastify) => {
   const env = fastify.config
-  const url = env.NODE_ENV === 'test' ? (env.TEST_DATABASE_URL || env.DATABASE_URL) : env.DATABASE_URL
+  const url = (env.NODE_ENV === 'test' && env.TEST_DATABASE_URL) ? env.TEST_DATABASE_URL : env.DATABASE_URL
   const { db, sql } = createDb(url)
   fastify.decorate('db', db)
   fastify.addHook('onClose', async () => {

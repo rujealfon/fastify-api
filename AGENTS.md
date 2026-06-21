@@ -30,3 +30,5 @@ Recent commits use concise, imperative summaries such as `Add profile module wit
 ## Architecture & Configuration Notes
 
 Preserve the plugin registration order in `app.ts`: `env` first, Redis before rate limiting, and request context before auth and request ID hooks. Domain errors should extend `AppError` and use existing subclasses such as `NotFoundError`, `UnauthorizedError`, `ConflictError`, and `ValidationError`. Copy `.env.example` to `.env`; required variables include `DATABASE_URL`, `JWT_SECRET`, and `REDIS_URL`.
+
+Global constants shared across two or more modules live in `src/common/constants.ts`; single-module constants stay local. Users are soft-deleted (`deleted_at`, `deleted_by`, `purge_at` columns); re-registration of a recently deleted email is blocked during the retention window (`ACCOUNT_RETENTION_DAYS`, default 90) and allowed only after it expires. The `docker/cleanup/` container hard-deletes rows past the retention window and reads the same `ACCOUNT_RETENTION_DAYS` env var.

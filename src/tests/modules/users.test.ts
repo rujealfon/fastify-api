@@ -1,6 +1,10 @@
 import type { FastifyInstance } from 'fastify'
+import process from 'node:process'
+import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
+
+const RETENTION_DAYS = Number(process.env.ACCOUNT_RETENTION_DAYS ?? 90)
 
 interface Profile {
   firstName: string | null
@@ -45,6 +49,15 @@ describe('users API', () => {
       payload: { email, password },
     })
     return res.json<{ data: User }>().data
+  }
+
+  async function loginAs(email: string, password = 'password123') {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email, password },
+    })
+    return res.json<{ data: { token: string } }>().data.token
   }
 
   // ── GET /api/v1/users ──────────────────────────────────────────────────────
@@ -99,10 +112,11 @@ describe('users API', () => {
 
     it('does not return soft-deleted users', async () => {
       const user = await createUser('gone@example.com')
+      const userToken = await loginAs('gone@example.com')
       await app.inject({
         method: 'DELETE',
         url: `/api/v1/users/${user.id}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${userToken}` },
       })
       const res = await app.inject({
         method: 'GET',
@@ -172,10 +186,11 @@ describe('users API', () => {
 
     it('returns 404 for a soft-deleted user', async () => {
       const user = await createUser('deleted@example.com')
+      const userToken = await loginAs('deleted@example.com')
       await app.inject({
         method: 'DELETE',
         url: `/api/v1/users/${user.id}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${userToken}` },
       })
       const res = await app.inject({
         method: 'GET',
@@ -237,17 +252,41 @@ describe('users API', () => {
       expect(res.statusCode).toBe(409)
     })
 
-    it('allows re-registration after soft-delete', async () => {
+    it('returns 409 when re-registering within retention', async () => {
       const user = await createUser('reuse@example.com')
+      const userToken = await loginAs('reuse@example.com')
       await app.inject({
         method: 'DELETE',
         url: `/api/v1/users/${user.id}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${userToken}` },
       })
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/users',
         payload: { email: 'reuse@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(409)
+      expect(res.json<{ error: { message: string } }>().error.message).toContain('Restore')
+    })
+
+    it('allows re-registration after retention expires', async () => {
+      const user = await createUser('old-reuse@example.com')
+      const userToken = await loginAs('old-reuse@example.com')
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/users/${user.id}`,
+        headers: { authorization: `Bearer ${userToken}` },
+      })
+      await app.db.execute(sql`
+        update users
+        set deleted_at = now() - (${RETENTION_DAYS + 1} || ' days')::interval,
+            purge_at = now() - interval '1 day'
+        where id = ${user.id}
+      `)
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/users',
+        payload: { email: 'old-reuse@example.com', password: 'password123' },
       })
       expect(res.statusCode).toBe(201)
     })
@@ -291,10 +330,11 @@ describe('users API', () => {
 
     it('updates email and returns the updated user with profile', async () => {
       const user = await createUser('before@example.com')
+      const userToken = await loginAs('before@example.com')
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/v1/users/${user.id}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${userToken}` },
         payload: { email: 'after@example.com' },
       })
       expect(res.statusCode).toBe(200)
@@ -303,7 +343,7 @@ describe('users API', () => {
       expect(data.profile).toBeDefined()
     })
 
-    it('returns 404 for unknown id', async () => {
+    it('returns 404 for a uuid that is not the caller', async () => {
       const res = await app.inject({
         method: 'PATCH',
         url: '/api/v1/users/00000000-0000-0000-0000-000000000000',
@@ -347,30 +387,32 @@ describe('users API', () => {
 
     it('soft-deletes a user and returns 204', async () => {
       const user = await createUser('todelete@example.com')
+      const userToken = await loginAs('todelete@example.com')
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/v1/users/${user.id}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${userToken}` },
       })
       expect(res.statusCode).toBe(204)
     })
 
     it('returns 404 when deleting an already-deleted user', async () => {
       const user = await createUser('twice@example.com')
+      const userToken = await loginAs('twice@example.com')
       await app.inject({
         method: 'DELETE',
         url: `/api/v1/users/${user.id}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${userToken}` },
       })
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/v1/users/${user.id}`,
-        headers: { authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${userToken}` },
       })
       expect(res.statusCode).toBe(404)
     })
 
-    it('returns 404 for unknown id', async () => {
+    it('returns 404 for a uuid that is not the caller', async () => {
       const res = await app.inject({
         method: 'DELETE',
         url: '/api/v1/users/00000000-0000-0000-0000-000000000000',

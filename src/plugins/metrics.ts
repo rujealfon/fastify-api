@@ -16,7 +16,7 @@ const metricsPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.decorate('metricsRegistry', registry)
 
   fastify.get('/metrics', {
-    schema: { hide: true },
+    schema: { tags: ['Health'], summary: 'Prometheus metrics' },
     handler: async (_request, reply) => {
       reply.header('Content-Type', registry.contentType)
       return registry.metrics()

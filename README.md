@@ -50,6 +50,7 @@ src/
 │   ├── index.ts
 │   └── schemas/                  # Per-domain route schemas (auth, users, products)
 ├── common/                       # Cross-cutting concerns shared across all modules
+│   ├── constants.ts              # Global constants shared across two or more modules
 │   ├── decorators/               # fastify.authenticate
 │   ├── errors/                   # AppError hierarchy (404, 401, 409, 422)
 │   ├── hooks/                    # request-id propagation + request context wiring
@@ -92,6 +93,7 @@ cp .env.example .env
 | `LOG_LEVEL` | | `info` | Pino log level |
 | `COOKIE_SECRET` | | *(JWT_SECRET)* | Secret for signed cookies — falls back to `JWT_SECRET` if empty |
 | `OTEL_ENDPOINT` | | *(disabled)* | OTLP HTTP endpoint (e.g. `http://localhost:4318/v1/traces`). Leave empty to disable tracing. |
+| `ACCOUNT_RETENTION_DAYS` | | `90` | Days before soft-deleted users are permanently purged by the cleanup job |
 
 ## API Documentation
 

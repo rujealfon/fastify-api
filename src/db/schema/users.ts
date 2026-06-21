@@ -10,8 +10,9 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
   deletedAt: timestamp('deleted_at'),
   deletedBy: uuid('deleted_by'),
+  purgeAt: timestamp('purge_at'),
 }, t => [
-  // ponytail: partial index so deleted users don't block re-registration
+  // Partial index so expired deleted users don't block a new active account.
   uniqueIndex('users_email_unique').on(t.email).where(sql`${t.deletedAt} IS NULL`),
 ])
 

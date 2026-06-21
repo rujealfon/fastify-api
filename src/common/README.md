@@ -2,10 +2,11 @@
 
 Cross-cutting utilities shared across all domain modules. Nothing here is domain-specific.
 
-## Directories
+## Contents
 
-| Directory | Contents |
+| Path | Contents |
 |---|---|
+| `constants.ts` | Global constants shared across two or more modules |
 | `decorators/` | Fastify instance decorators (e.g. `fastify.authenticate`) |
 | `errors/` | `AppError` base class and typed HTTP error subclasses |
 | `hooks/` | Fastify lifecycle hooks applied globally via `fastify-plugin` |

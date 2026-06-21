@@ -1,10 +1,11 @@
 import { authSchema } from '@/contract/schemas/auth.js'
 import * as authService from '@/modules/auth/services/auth.service.js'
+import { createUser } from '@/modules/users/services/user.service.js'
 import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
 export default createFastifyRpcPlugin(authSchema, {
   register: async ({ body, request }) => {
-    const user = await authService.registerUser(request.server.db, body)
+    const user = await createUser(request.server.db, body)
     return { status: 201 as const, body: { success: true as const, data: user } }
   },
 
