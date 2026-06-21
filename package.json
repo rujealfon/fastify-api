@@ -3,9 +3,9 @@
 	"version": "1.0.0",
 	"type": "module",
 	"scripts": {
-		"build": "tsc && tsc-alias",
+		"build": "docker exec fastify_app nubx tsc && tsc-alias",
 		"db:generate": "docker exec fastify_drizzle_studio nubx drizzle-kit generate",
-		"db:migrate": "docker exec fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate",
+		"db:migrate": "docker exec fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate && docker exec -e DATABASE_URL=postgres://postgres:password@postgres:5432/fastify_test fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate",
 		"lint": "docker exec fastify_app nubx eslint src",
 		"lint:fix": "docker exec fastify_app nubx eslint src --fix",
 		"test:unit": "docker exec -e NODE_ENV=test fastify_app nubx vitest run"
@@ -27,7 +27,7 @@
 		"@opentelemetry/auto-instrumentations-node": "^0.77.0",
 		"@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
 		"@opentelemetry/sdk-node": "^0.219.0",
-		"@scalar/fastify-api-reference": "^1.59.3",
+		"@scalar/fastify-api-reference": "^1.60.0",
 		"bcryptjs": "^3.0.3",
 		"drizzle-orm": "^0.45.2",
 		"fastify": "^5.8.5",
@@ -42,11 +42,11 @@
 	},
 	"devDependencies": {
 		"@antfu/eslint-config": "^9.0.0",
-		"@types/node": "^25.9.3",
+		"@types/node": "^25.9.4",
 		"drizzle-kit": "^0.31.10",
 		"eslint": "^10.5.0",
 		"tsc-alias": "^1.8.17",
 		"typescript": "^5.9.3",
-		"vitest": "^4.1.8"
+		"vitest": "^4.1.9"
 	}
 }

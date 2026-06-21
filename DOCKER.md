@@ -46,6 +46,10 @@ docker-compose ps
 Tables don't exist yet. Apply the migrations once:
 
 ```bash
+pnpm db:generate
+```
+
+```bash
 pnpm db:migrate
 ```
 

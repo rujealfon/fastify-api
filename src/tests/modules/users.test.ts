@@ -237,6 +237,21 @@ describe('users API', () => {
       expect(res.statusCode).toBe(409)
     })
 
+    it('allows re-registration after soft-delete', async () => {
+      const user = await createUser('reuse@example.com')
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/users/${user.id}`,
+        headers: { authorization: `Bearer ${token}` },
+      })
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/users',
+        payload: { email: 'reuse@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(201)
+    })
+
     it('returns 400 for invalid email', async () => {
       const res = await app.inject({
         method: 'POST',

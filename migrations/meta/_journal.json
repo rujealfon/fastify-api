@@ -8,6 +8,20 @@
       "when": 1781958427909,
       "tag": "0000_sloppy_typhoid_mary",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782018505858,
+      "tag": "0001_colorful_nextwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782018827734,
+      "tag": "0002_volatile_ink",
+      "breakpoints": true
     }
   ]
 }
