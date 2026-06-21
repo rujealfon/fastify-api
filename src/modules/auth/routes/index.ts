@@ -5,7 +5,7 @@ import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
 export default createFastifyRpcPlugin(authSchema, {
   register: async ({ body, request }) => {
-    const user = await createUser(request.server.db, body)
+    const user = await createUser(request.server.db, body, request.server.config.ACCOUNT_RETENTION_DAYS)
     return { status: 201 as const, body: { success: true as const, data: user } }
   },
 

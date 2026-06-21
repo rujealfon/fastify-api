@@ -2,16 +2,12 @@ import type { Db } from '@/db/index.js'
 import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
 import bcrypt from 'bcryptjs'
 import { and, eq, isNull } from 'drizzle-orm'
+import { ACCOUNT_RETENTION_DAYS_DEFAULT } from '@/common/constants.js'
 import { ConflictError } from '@/common/errors/ConflictError.js'
 import { NotFoundError } from '@/common/errors/NotFoundError.js'
 import { profiles, users } from '@/db/schema/index.js'
 
 const PG_UNIQUE_VIOLATION = '23505'
-
-function accountRetentionDays(): number {
-  const n = Number(process.env.ACCOUNT_RETENTION_DAYS)
-  return Number.isFinite(n) && n > 0 ? n : 90
-}
 
 export function rethrowEmailConflict(err: unknown, email: string): never {
   const pgCode = (err as { code?: string, cause?: { code?: string } }).code
@@ -21,23 +17,29 @@ export function rethrowEmailConflict(err: unknown, email: string): never {
   throw err
 }
 
-function retentionExpiresAt(deletedAt: Date) {
+function retentionExpiresAt(deletedAt: Date, retentionDays: number) {
   const purgeAt = new Date(deletedAt)
-  purgeAt.setDate(purgeAt.getDate() + accountRetentionDays())
+  purgeAt.setUTCDate(purgeAt.getUTCDate() + retentionDays)
   return purgeAt
 }
 
-export async function assertEmailAvailableForRegistration(db: Db, email: string) {
+export async function assertEmailAvailableForRegistration(
+  db: Pick<Db, 'query'>,
+  email: string,
+  excludeUserId?: string,
+  retentionDays = ACCOUNT_RETENTION_DAYS_DEFAULT,
+) {
   const rows = await db.query.users.findMany({
-    columns: { deletedAt: true, purgeAt: true },
+    columns: { id: true, deletedAt: true, purgeAt: true },
     where: eq(users.email, email),
   })
-  const active = rows.find(row => !row.deletedAt)
+  const active = rows.find(row => !row.deletedAt && row.id !== excludeUserId)
   if (active)
     throw new ConflictError(`Email '${email}' is already registered`)
 
   const now = new Date()
-  const recoverable = rows.find(row => (row.purgeAt ?? retentionExpiresAt(row.deletedAt!)) > now)
+  const recoverable = rows.find(row => row.deletedAt !== null
+    && (row.purgeAt ?? retentionExpiresAt(row.deletedAt, retentionDays)) > now)
   if (recoverable)
     throw new ConflictError(`Email '${email}' belongs to a recently deleted account. Restore the account instead.`)
 }
@@ -112,8 +114,8 @@ export async function findUserById(db: Db, id: string) {
   return toUser(row)
 }
 
-export async function createUser(db: Db, body: CreateUserBody) {
-  await assertEmailAvailableForRegistration(db, body.email)
+export async function createUser(db: Db, body: CreateUserBody, retentionDays = ACCOUNT_RETENTION_DAYS_DEFAULT) {
+  await assertEmailAvailableForRegistration(db, body.email, undefined, retentionDays)
 
   const passwordHash = await bcrypt.hash(body.password, 12)
 
@@ -129,7 +131,7 @@ export async function createUser(db: Db, body: CreateUserBody) {
   }).catch(err => rethrowEmailConflict(err, body.email))
 }
 
-export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
+export async function updateUser(db: Db, id: string, body: UpdateUserBody, retentionDays = ACCOUNT_RETENTION_DAYS_DEFAULT) {
   return db.transaction(async (tx) => {
     const [existing] = await tx
       .select({ id: users.id })
@@ -139,8 +141,10 @@ export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
     if (!existing)
       throw new NotFoundError('User', id)
 
-    if (body.email !== undefined)
+    if (body.email !== undefined) {
+      await assertEmailAvailableForRegistration(tx, body.email, id, retentionDays)
       await tx.update(users).set({ email: body.email }).where(eq(users.id, id)).catch(err => rethrowEmailConflict(err, body.email!))
+    }
     if (body.profile !== undefined)
       await tx.update(profiles).set(body.profile).where(eq(profiles.userId, id))
 
@@ -157,11 +161,11 @@ export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
   })
 }
 
-export async function deleteUser(db: Db, id: string, deletedBy?: string) {
+export async function deleteUser(db: Db, id: string, deletedBy?: string, retentionDays = ACCOUNT_RETENTION_DAYS_DEFAULT) {
   const deletedAt = new Date()
   const [deleted] = await db
     .update(users)
-    .set({ deletedAt, deletedBy: deletedBy ?? null, purgeAt: retentionExpiresAt(deletedAt) })
+    .set({ deletedAt, deletedBy: deletedBy ?? null, purgeAt: retentionExpiresAt(deletedAt, retentionDays) })
     .where(and(eq(users.id, id), isNull(users.deletedAt)))
     .returning({ id: users.id })
   if (!deleted)

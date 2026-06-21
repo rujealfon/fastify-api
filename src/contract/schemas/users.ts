@@ -1,7 +1,7 @@
 import type { RouteMap } from '@/contract/types.js'
 import { z } from 'zod'
-import { apiErrorSchema, apiListSchema, apiSuccessSchema } from '@/contract/types.js'
 import { paginationQuerySchema, uuidParamSchema } from '@/common/schemas/index.js'
+import { apiErrorSchema, apiListSchema, apiSuccessSchema } from '@/contract/types.js'
 import {
   createUserBodySchema,
   updateUserBodySchema,
@@ -49,6 +49,7 @@ export const usersSchema = {
     body: updateUserBodySchema,
     responses: {
       200: apiSuccessSchema(userSchema),
+      409: apiErrorSchema,
       404: apiErrorSchema,
     },
   },

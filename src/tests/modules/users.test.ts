@@ -343,6 +343,28 @@ describe('users API', () => {
       expect(data.profile).toBeDefined()
     })
 
+    it('returns 409 when updating to an email still within retention', async () => {
+      const deletedUser = await createUser('retained@example.com')
+      const deletedUserToken = await loginAs('retained@example.com')
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/users/${deletedUser.id}`,
+        headers: { authorization: `Bearer ${deletedUserToken}` },
+      })
+
+      const user = await createUser('current@example.com')
+      const userToken = await loginAs('current@example.com')
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/users/${user.id}`,
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { email: 'retained@example.com' },
+      })
+
+      expect(res.statusCode).toBe(409)
+      expect(res.json<{ error: { message: string } }>().error.message).toContain('Restore')
+    })
+
     it('returns 404 for a uuid that is not the caller', async () => {
       const res = await app.inject({
         method: 'PATCH',

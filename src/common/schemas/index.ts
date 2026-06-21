@@ -2,6 +2,9 @@ import { z } from 'zod'
 export { apiErrorSchema, apiListSchema, apiSuccessSchema } from '@/contract/types.js'
 export type { ApiError } from '@/contract/types.js'
 
+export { apiErrorSchema, apiListSchema, apiSuccessSchema } from '@/contract/types.js'
+export type { ApiError } from '@/contract/types.js'
+
 export const paginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1).meta({ examples: [1] }),
   limit: z.coerce.number().int().min(1).max(100).default(10).meta({ examples: [10] }),

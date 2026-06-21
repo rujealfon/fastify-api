@@ -1,3 +1,5 @@
+import { ACCOUNT_RETENTION_DAYS_DEFAULT } from '@/common/constants.js'
+
 export interface AppConfig {
   PORT: number
   HOST: string
@@ -30,6 +32,6 @@ export const configSchema = {
     REDIS_URL: { type: 'string' },
     COOKIE_SECRET: { type: 'string', default: '' },
     OTEL_ENDPOINT: { type: 'string', default: '' },
-    ACCOUNT_RETENTION_DAYS: { type: 'integer', default: 90, minimum: 1 },
+    ACCOUNT_RETENTION_DAYS: { type: 'integer', default: ACCOUNT_RETENTION_DAYS_DEFAULT, minimum: 1 },
   },
 } as const

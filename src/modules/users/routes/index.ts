@@ -27,19 +27,19 @@ export default createFastifyRpcPlugin(usersSchema, {
   },
 
   create: async ({ body, request }) => {
-    const user = await userService.createUser(request.server.db, body)
+    const user = await userService.createUser(request.server.db, body, request.server.config.ACCOUNT_RETENTION_DAYS)
     return { status: 201 as const, body: { success: true as const, data: user } }
   },
 
   update: async ({ params, body, request }) => {
     assertSelf(request, params.id)
-    const user = await userService.updateUser(request.server.db, params.id, body)
+    const user = await userService.updateUser(request.server.db, params.id, body, request.server.config.ACCOUNT_RETENTION_DAYS)
     return { status: 200 as const, body: { success: true as const, data: user } }
   },
 
   delete: async ({ params, request }) => {
     const actorId = assertSelf(request, params.id)
-    await userService.deleteUser(request.server.db, params.id, actorId)
+    await userService.deleteUser(request.server.db, params.id, actorId, request.server.config.ACCOUNT_RETENTION_DAYS)
     return { status: 204 as const, body: null }
   },
 })
