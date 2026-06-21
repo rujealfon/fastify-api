@@ -12,7 +12,7 @@ export const usersSchema = {
     method: 'GET' as const,
     path: '/api/v1/users',
     tags: ['Users'],
-    auth: true,
+    admin: true,
     query: paginationQuerySchema,
     responses: {
       200: apiListSchema(userSchema),
@@ -22,7 +22,7 @@ export const usersSchema = {
     method: 'GET' as const,
     path: '/api/v1/users/:id',
     tags: ['Users'],
-    auth: true,
+    admin: true,
     params: uuidParamSchema,
     responses: {
       200: apiSuccessSchema(userSchema),
@@ -33,6 +33,7 @@ export const usersSchema = {
     method: 'POST' as const,
     path: '/api/v1/users',
     tags: ['Users'],
+    admin: true,
     body: createUserBodySchema,
     responses: {
       201: apiSuccessSchema(userSchema),

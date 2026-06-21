@@ -1,11 +1,13 @@
 import { sql } from 'drizzle-orm'
 import { pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { uuidv7 } from 'uuidv7'
+import { ROLES } from '@/common/constants/index.js'
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
   email: text('email').notNull(),
   passwordHash: text('password_hash').notNull(),
+  role: text('role').notNull().default(ROLES.USER),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
   deletedAt: timestamp('deleted_at'),

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
+import { createTestApp, registerAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 interface Profile {
   firstName: string | null
@@ -29,7 +29,9 @@ describe('users API', () => {
 
   beforeEach(async () => {
     await resetDb(app)
-    token = await registerAndLogin(app)
+    // The users module is admin-only (list/get/create) or self-or-admin (update/delete);
+    // most tests act as an admin.
+    token = await registerAdminAndLogin(app)
   })
 
   afterAll(async () => {
@@ -42,6 +44,7 @@ describe('users API', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/users',
+      headers: { authorization: `Bearer ${token}` },
       payload: { email, password },
     })
     return res.json<{ data: User }>().data
@@ -57,7 +60,7 @@ describe('users API', () => {
 
     it('returns an empty list when no users exist', async () => {
       await resetDb(app)
-      token = await registerAndLogin(app)
+      token = await registerAdminAndLogin(app)
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/users',
@@ -202,6 +205,7 @@ describe('users API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/users',
+        headers: { authorization: `Bearer ${token}` },
         payload: { email: 'new@example.com', password: 'password123' },
       })
       expect(res.statusCode).toBe(201)
@@ -222,6 +226,7 @@ describe('users API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/users',
+        headers: { authorization: `Bearer ${token}` },
         payload: { email: 'new@example.com', password: 'password123' },
       })
       expect(res.json()).not.toHaveProperty('data.passwordHash')
@@ -232,6 +237,7 @@ describe('users API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/users',
+        headers: { authorization: `Bearer ${token}` },
         payload: { email: 'dup@example.com', password: 'password123' },
       })
       expect(res.statusCode).toBe(409)
@@ -247,6 +253,7 @@ describe('users API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/users',
+        headers: { authorization: `Bearer ${token}` },
         payload: { email: 'reuse@example.com', password: 'password123' },
       })
       expect(res.statusCode).toBe(201)
@@ -256,6 +263,7 @@ describe('users API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/users',
+        headers: { authorization: `Bearer ${token}` },
         payload: { email: 'bad-email', password: 'password123' },
       })
       expect(res.statusCode).toBe(400)
@@ -265,13 +273,19 @@ describe('users API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/users',
+        headers: { authorization: `Bearer ${token}` },
         payload: { email: 'short@example.com', password: 'abc' },
       })
       expect(res.statusCode).toBe(400)
     })
 
     it('returns 400 when body is empty', async () => {
-      const res = await app.inject({ method: 'POST', url: '/api/v1/users', payload: {} })
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/users',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {},
+      })
       expect(res.statusCode).toBe(400)
     })
   })
@@ -386,6 +400,81 @@ describe('users API', () => {
         headers: { authorization: `Bearer ${token}` },
       })
       expect(res.statusCode).toBe(400)
+    })
+  })
+
+  // ── Authorization model (admin-only vs self-or-admin) ──────────────────────
+
+  describe('authorization', () => {
+    // Register a normal (non-admin) user and return { id, token }.
+    async function registerNormal(email: string) {
+      const reg = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email, password: 'password123' } })
+      const id = reg.json<{ data: { id: string } }>().data.id
+      const loginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email, password: 'password123' } })
+      const userToken = loginRes.json<{ data: { token: string } }>().data.token
+      return { id, token: userToken }
+    }
+
+    const auth = (t: string) => ({ authorization: `Bearer ${t}` })
+
+    it('forbids a non-admin from listing users', async () => {
+      const { token: t } = await registerNormal('n1@example.com')
+      const res = await app.inject({ method: 'GET', url: '/api/v1/users', headers: auth(t) })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('forbids a non-admin from getting any user by id', async () => {
+      const { id, token: t } = await registerNormal('n2@example.com')
+      const res = await app.inject({ method: 'GET', url: `/api/v1/users/${id}`, headers: auth(t) })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('forbids a non-admin from creating users', async () => {
+      const { token: t } = await registerNormal('n3@example.com')
+      const res = await app.inject({ method: 'POST', url: '/api/v1/users', headers: auth(t), payload: { email: 'x@example.com', password: 'password123' } })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('lets a non-admin update their own account', async () => {
+      const { id, token: t } = await registerNormal('n4@example.com')
+      const res = await app.inject({ method: 'PATCH', url: `/api/v1/users/${id}`, headers: auth(t), payload: { email: 'n4-new@example.com' } })
+      expect(res.statusCode).toBe(200)
+    })
+
+    it('lets a non-admin delete their own account', async () => {
+      const { id, token: t } = await registerNormal('n5@example.com')
+      const res = await app.inject({ method: 'DELETE', url: `/api/v1/users/${id}`, headers: auth(t) })
+      expect(res.statusCode).toBe(204)
+    })
+
+    it('forbids a non-admin from updating another user', async () => {
+      const a = await registerNormal('n6a@example.com')
+      const b = await registerNormal('n6b@example.com')
+      const res = await app.inject({ method: 'PATCH', url: `/api/v1/users/${b.id}`, headers: auth(a.token), payload: { email: 'hijack@example.com' } })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('forbids a non-admin from deleting another user', async () => {
+      const a = await registerNormal('n7a@example.com')
+      const b = await registerNormal('n7b@example.com')
+      const res = await app.inject({ method: 'DELETE', url: `/api/v1/users/${b.id}`, headers: auth(a.token) })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('lets an admin delete another user', async () => {
+      const b = await registerNormal('n8b@example.com')
+      const res = await app.inject({ method: 'DELETE', url: `/api/v1/users/${b.id}`, headers: { authorization: `Bearer ${token}` } })
+      expect(res.statusCode).toBe(204)
+    })
+
+    it('does not let a user escalate to admin via the update body', async () => {
+      const { id, token: t } = await registerNormal('escalate@example.com')
+      // attempt mass-assignment of role through the self-update path
+      await app.inject({ method: 'PATCH', url: `/api/v1/users/${id}`, headers: auth(t), payload: { email: 'escalate@example.com', role: 'admin' } })
+      // re-login so the token reflects any (un)changed role, then probe an admin-only route
+      const fresh = (await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'escalate@example.com', password: 'password123' } })).json<{ data: { token: string } }>().data.token
+      const res = await app.inject({ method: 'GET', url: '/api/v1/users', headers: auth(fresh) })
+      expect(res.statusCode).toBe(403)
     })
   })
 })

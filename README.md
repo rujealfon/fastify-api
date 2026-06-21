@@ -50,8 +50,9 @@ src/
 │   ├── index.ts
 │   └── schemas/                  # Per-domain route schemas (auth, users, products)
 ├── common/                       # Cross-cutting concerns shared across all modules
-│   ├── decorators/               # fastify.authenticate
-│   ├── errors/                   # AppError hierarchy (404, 401, 409, 422)
+│   ├── constants/                # Shared constants & enums (ROLES, Postgres error codes)
+│   ├── decorators/               # fastify.authenticate, fastify.requireAdmin
+│   ├── errors/                   # AppError hierarchy (401, 403, 404, 409, 422)
 │   ├── hooks/                    # request-id propagation + request context wiring
 │   └── schemas/                  # Shared Zod schemas (pagination, uuid, apiError)
 ├── modules/                      # Domain modules (auth, users, products, health)

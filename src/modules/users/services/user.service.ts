@@ -2,6 +2,7 @@ import type { Db } from '@/db/index.js'
 import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
 import bcrypt from 'bcryptjs'
 import { and, eq, isNull } from 'drizzle-orm'
+import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
 import { ConflictError } from '@/common/errors/ConflictError.js'
 import { NotFoundError } from '@/common/errors/NotFoundError.js'
 import { profiles, users } from '@/db/schema/index.js'
@@ -110,7 +111,7 @@ export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
   }
   catch (err) {
     const pgCode = (err as { cause?: { code?: string } })?.cause?.code
-    if (pgCode === '23505')
+    if (pgCode === PG_UNIQUE_VIOLATION)
       throw new ConflictError(`Email '${body.email}' is already registered`)
     throw err
   }

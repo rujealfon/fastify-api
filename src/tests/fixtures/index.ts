@@ -1,5 +1,7 @@
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { buildApp } from '@/app.js'
+import { ROLES } from '@/common/constants/index.js'
+import { users } from '@/db/schema/index.js'
 
 export async function createTestApp() {
   const app = await buildApp()
@@ -27,4 +29,18 @@ export async function registerAndLogin(
   })
   const { data } = res.json<{ data: { token: string } }>()
   return data.token
+}
+
+export async function registerAdminAndLogin(
+  app: Awaited<ReturnType<typeof createTestApp>>,
+  user = { email: 'admin@example.com', password: 'password123' },
+) {
+  await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: user })
+  await app.db.update(users).set({ role: ROLES.ADMIN }).where(eq(users.email, user.email))
+  const res = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    payload: { email: user.email, password: user.password },
+  })
+  return res.json<{ data: { token: string } }>().data.token
 }
