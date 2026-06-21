@@ -3,6 +3,9 @@ import rateLimit from '@fastify/rate-limit'
 import fp from 'fastify-plugin'
 
 const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
+  if (fastify.config.NODE_ENV === 'development')
+    return
+
   await fastify.register(rateLimit, {
     max: 100,
     timeWindow: '15 minutes',
