@@ -3,6 +3,7 @@ export interface AppConfig {
   HOST: string
   NODE_ENV: 'development' | 'production' | 'test'
   DATABASE_URL: string
+  TEST_DATABASE_URL?: string
   JWT_SECRET: string
   LOG_LEVEL: string
   REDIS_URL: string
@@ -22,6 +23,7 @@ export const configSchema = {
       default: 'development',
     },
     DATABASE_URL: { type: 'string' },
+    TEST_DATABASE_URL: { type: 'string', default: '' },
     JWT_SECRET: { type: 'string' },
     LOG_LEVEL: { type: 'string', default: 'info' },
     REDIS_URL: { type: 'string' },

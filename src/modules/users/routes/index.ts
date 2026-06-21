@@ -25,7 +25,8 @@ export default createFastifyRpcPlugin(usersSchema, {
   },
 
   delete: async ({ params, request }) => {
-    await userService.deleteUser(request.server.db, params.id)
+    const actorId = request.requestContext.get('userId') as string | undefined
+    await userService.deleteUser(request.server.db, params.id, actorId)
     return { status: 204 as const, body: null }
   },
 })

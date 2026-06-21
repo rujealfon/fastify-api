@@ -64,4 +64,4 @@ jobs:
           NODE_ENV: test
 
       - name: Build
-        run: nub run build
+        run: nubx tsc && nubx tsc-alias

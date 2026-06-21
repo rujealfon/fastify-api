@@ -77,7 +77,7 @@ export async function findUserById(db: Db, id: string) {
 }
 
 export async function createUser(db: Db, body: CreateUserBody) {
-  const existing = await db.query.users.findFirst({ where: eq(users.email, body.email) })
+  const existing = await db.query.users.findFirst({ where: and(eq(users.email, body.email), isNull(users.deletedAt)) })
   if (existing)
     throw new ConflictError(`Email '${body.email}' is already registered`)
 
@@ -118,7 +118,7 @@ export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
   return findUserById(db, id)
 }
 
-export async function deleteUser(db: Db, id: string) {
+export async function deleteUser(db: Db, id: string, deletedBy?: string) {
   await findUserById(db, id)
-  await db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, id))
+  await db.update(users).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(users.id, id))
 }
