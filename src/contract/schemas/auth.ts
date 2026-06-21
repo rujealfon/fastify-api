@@ -1,5 +1,5 @@
 import type { RouteMap } from '@/contract/types.js'
-import { apiSuccessSchema } from '@/common/schemas/index.js'
+import { apiErrorSchema, apiSuccessSchema } from '@/common/schemas/index.js'
 import {
   authTokensSchema,
   authUserSchema,
@@ -15,6 +15,7 @@ export const authSchema = {
     body: registerBodySchema,
     responses: {
       201: apiSuccessSchema(authUserSchema),
+      409: apiErrorSchema,
     },
   },
   login: {
@@ -24,6 +25,7 @@ export const authSchema = {
     body: loginBodySchema,
     responses: {
       200: apiSuccessSchema(authTokensSchema),
+      401: apiErrorSchema,
     },
   },
 } satisfies RouteMap

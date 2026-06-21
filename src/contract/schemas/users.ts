@@ -16,6 +16,8 @@ export const usersSchema = {
     query: paginationQuerySchema,
     responses: {
       200: apiListSchema(userSchema),
+      401: apiErrorSchema,
+      403: apiErrorSchema,
     },
   },
   get: {
@@ -26,6 +28,8 @@ export const usersSchema = {
     params: uuidParamSchema,
     responses: {
       200: apiSuccessSchema(userSchema),
+      401: apiErrorSchema,
+      403: apiErrorSchema,
       404: apiErrorSchema,
     },
   },
@@ -37,6 +41,8 @@ export const usersSchema = {
     body: createUserBodySchema,
     responses: {
       201: apiSuccessSchema(userSchema),
+      401: apiErrorSchema,
+      403: apiErrorSchema,
       409: apiErrorSchema,
     },
   },
@@ -49,7 +55,10 @@ export const usersSchema = {
     body: updateUserBodySchema,
     responses: {
       200: apiSuccessSchema(userSchema),
+      401: apiErrorSchema,
+      403: apiErrorSchema,
       404: apiErrorSchema,
+      409: apiErrorSchema,
     },
   },
   delete: {
@@ -60,6 +69,8 @@ export const usersSchema = {
     params: uuidParamSchema,
     responses: {
       204: z.null(),
+      401: apiErrorSchema,
+      403: apiErrorSchema,
       404: apiErrorSchema,
     },
   },

@@ -16,6 +16,7 @@ export const productsSchema = {
     query: paginationQuerySchema,
     responses: {
       200: apiListSchema(productSchema),
+      401: apiErrorSchema,
     },
   },
   get: {
@@ -26,6 +27,7 @@ export const productsSchema = {
     params: uuidParamSchema,
     responses: {
       200: apiSuccessSchema(productSchema),
+      401: apiErrorSchema,
       404: apiErrorSchema,
     },
   },
@@ -37,6 +39,7 @@ export const productsSchema = {
     body: createProductBodySchema,
     responses: {
       201: apiSuccessSchema(productSchema),
+      401: apiErrorSchema,
     },
   },
   update: {
@@ -48,6 +51,7 @@ export const productsSchema = {
     body: updateProductBodySchema,
     responses: {
       200: apiSuccessSchema(productSchema),
+      401: apiErrorSchema,
       404: apiErrorSchema,
     },
   },
@@ -59,6 +63,7 @@ export const productsSchema = {
     params: uuidParamSchema,
     responses: {
       204: z.null(),
+      401: apiErrorSchema,
       404: apiErrorSchema,
     },
   },
