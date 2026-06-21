@@ -10,6 +10,7 @@ import { configSchema } from './config/index.js'
 import authRoutes from './modules/auth/routes/index.js'
 import healthRoutes from './modules/health/routes/index.js'
 import productsRoutes from './modules/products/routes/index.js'
+import profileRoutes from './modules/profile/routes/index.js'
 import usersRoutes from './modules/users/routes/index.js'
 import compressPlugin from './plugins/compress.js'
 import cookiePlugin from './plugins/cookie.js'
@@ -84,25 +85,40 @@ export async function buildApp() {
     if (error instanceof AppError) {
       return reply.status(error.statusCode).send(error.toJSON())
     }
-    const err = error as Error & { validation?: unknown }
+    const err = error as Error & { validation?: Array<Record<string, unknown>> }
     if (err.validation) {
       return reply.status(400).send({
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: err.message,
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          fields: err.validation.map((issue) => {
+            const path = Array.isArray(issue.path)
+              ? (issue.path as (string | number)[])
+              : (issue.instancePath as string | undefined ?? '').replace(/^\//, '').split('/').filter(Boolean)
+            return {
+              path,
+              code: (issue.keyword as string | undefined) ?? 'invalid',
+              message: (issue.message as string | undefined) ?? 'Invalid value',
+            }
+          }),
+        },
       })
     }
     request.log.error({ err }, 'unhandled error')
     return reply.status(500).send({
-      statusCode: 500,
-      code: 'INTERNAL_ERROR',
-      message: 'Internal server error',
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error',
+      },
     })
   })
 
   // Routes
   await fastify.register(healthRoutes, { prefix: '/health' })
   await fastify.register(authRoutes)
+  await fastify.register(profileRoutes)
   await fastify.register(usersRoutes)
   await fastify.register(productsRoutes)
 

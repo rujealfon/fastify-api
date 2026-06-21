@@ -16,24 +16,27 @@ Health check module — liveness, readiness, and system detail probes for orches
 
 ```json
 // 200 — healthy
-{ "status": "ready" }
+{ "success": true, "data": { "status": "ready" } }
 
 // 503 — unhealthy
-{ "status": "not_ready", "reason": "redis unreachable" }
+{ "success": false, "error": { "code": "SERVICE_UNAVAILABLE", "message": "redis unreachable" } }
 ```
 
 ### GET /health/details
 
 ```json
 {
-  "status": "ok",
-  "memory": {
-    "heapUsed": 45678912,
-    "rssBytes": 78000000,
-    "eventLoopDelay": 2.1,
-    "eventLoopUtilized": 0.03
-  },
-  "underPressure": false
+  "success": true,
+  "data": {
+    "status": "ok",
+    "memory": {
+      "heapUsed": 45678912,
+      "rssBytes": 78000000,
+      "eventLoopDelay": 2.1,
+      "eventLoopUtilized": 0.03
+    },
+    "underPressure": false
+  }
 }
 ```
 

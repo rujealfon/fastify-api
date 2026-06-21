@@ -14,13 +14,19 @@ AppError (base)
 
 ## AppError shape
 
+All `AppError` subclasses serialise to the standard error envelope:
+
 ```ts
 {
-  statusCode: number
-  code: string // machine-readable, SCREAMING_SNAKE_CASE
-  message: string // human-readable
+  success: false
+  error: {
+    code: string    // machine-readable, SCREAMING_SNAKE_CASE
+    message: string // human-readable
+  }
 }
 ```
+
+HTTP status is set via the response status code; it is not repeated in the body.
 
 ## Usage in services / controllers
 

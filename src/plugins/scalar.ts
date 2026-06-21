@@ -22,6 +22,7 @@ const scalarPlugin: FastifyPluginAsync = async (fastify) => {
       tags: [
         { name: 'Auth', description: 'Authentication endpoints' },
         { name: 'Users', description: 'User management endpoints' },
+        { name: 'Profile', description: 'Authenticated user self-management endpoints' },
         { name: 'Products', description: 'Product management endpoints' },
         { name: 'Health', description: 'Health check endpoints' },
       ],

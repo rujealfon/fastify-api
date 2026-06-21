@@ -1,13 +1,11 @@
 import type { RouteMap } from '@/contract/types.js'
 import { z } from 'zod'
-import { apiErrorSchema, paginationQuerySchema, uuidParamSchema } from '@/common/schemas/index.js'
+import { apiErrorSchema, apiListSchema, apiSuccessSchema, paginationQuerySchema, uuidParamSchema } from '@/common/schemas/index.js'
 import {
   createUserBodySchema,
   updateUserBodySchema,
   userSchema,
 } from '@/modules/users/schemas/index.js'
-
-const metaSchema = z.object({ page: z.number(), limit: z.number(), total: z.number() })
 
 export const usersSchema = {
   list: {
@@ -17,7 +15,7 @@ export const usersSchema = {
     auth: true,
     query: paginationQuerySchema,
     responses: {
-      200: z.object({ data: z.array(userSchema), meta: metaSchema }),
+      200: apiListSchema(userSchema),
     },
   },
   get: {
@@ -27,7 +25,7 @@ export const usersSchema = {
     auth: true,
     params: uuidParamSchema,
     responses: {
-      200: z.object({ data: userSchema }),
+      200: apiSuccessSchema(userSchema),
       404: apiErrorSchema,
     },
   },
@@ -37,7 +35,7 @@ export const usersSchema = {
     tags: ['Users'],
     body: createUserBodySchema,
     responses: {
-      201: z.object({ data: userSchema }),
+      201: apiSuccessSchema(userSchema),
       409: apiErrorSchema,
     },
   },
@@ -49,7 +47,7 @@ export const usersSchema = {
     params: uuidParamSchema,
     body: updateUserBodySchema,
     responses: {
-      200: z.object({ data: userSchema }),
+      200: apiSuccessSchema(userSchema),
       404: apiErrorSchema,
     },
   },

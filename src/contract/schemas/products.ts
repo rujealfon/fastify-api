@@ -1,13 +1,11 @@
 import type { RouteMap } from '@/contract/types.js'
 import { z } from 'zod'
-import { apiErrorSchema, paginationQuerySchema, uuidParamSchema } from '@/common/schemas/index.js'
+import { apiErrorSchema, apiListSchema, apiSuccessSchema, paginationQuerySchema, uuidParamSchema } from '@/common/schemas/index.js'
 import {
   createProductBodySchema,
   productSchema,
   updateProductBodySchema,
 } from '@/modules/products/schemas/index.js'
-
-const metaSchema = z.object({ page: z.number(), limit: z.number(), total: z.number() })
 
 export const productsSchema = {
   list: {
@@ -17,7 +15,7 @@ export const productsSchema = {
     auth: true,
     query: paginationQuerySchema,
     responses: {
-      200: z.object({ data: z.array(productSchema), meta: metaSchema }),
+      200: apiListSchema(productSchema),
     },
   },
   get: {
@@ -27,7 +25,7 @@ export const productsSchema = {
     auth: true,
     params: uuidParamSchema,
     responses: {
-      200: z.object({ data: productSchema }),
+      200: apiSuccessSchema(productSchema),
       404: apiErrorSchema,
     },
   },
@@ -38,7 +36,7 @@ export const productsSchema = {
     auth: true,
     body: createProductBodySchema,
     responses: {
-      201: z.object({ data: productSchema }),
+      201: apiSuccessSchema(productSchema),
     },
   },
   update: {
@@ -49,7 +47,7 @@ export const productsSchema = {
     params: uuidParamSchema,
     body: updateProductBodySchema,
     responses: {
-      200: z.object({ data: productSchema }),
+      200: apiSuccessSchema(productSchema),
       404: apiErrorSchema,
     },
   },
