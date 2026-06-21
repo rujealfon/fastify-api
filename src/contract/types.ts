@@ -11,6 +11,7 @@ export interface RouteSchema<
   method: HttpMethod
   path: string
   auth?: boolean
+  admin?: boolean
   query?: TQuery
   params?: TParams
   body?: TBody
@@ -21,6 +22,7 @@ export type RouteMap = Record<string, {
   method: HttpMethod
   path: string
   auth?: boolean
+  admin?: boolean
   tags?: string[]
   query?: z.ZodType
   params?: z.ZodType

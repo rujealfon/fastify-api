@@ -31,6 +31,12 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
       if (!handler)
         continue
 
+      const preValidation = []
+      if (route.auth || route.admin)
+        preValidation.push(fastify.authenticate)
+      if (route.admin)
+        preValidation.push(fastify.requireAdmin)
+
       fastify.route({
         method: route.method as any,
         url: route.path,
@@ -41,7 +47,7 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
           ...(route.body !== undefined && { body: route.body }),
           response: route.responses,
         } as any,
-        preValidation: route.auth ? [fastify.authenticate] : undefined,
+        preValidation: preValidation.length ? preValidation : undefined,
         handler: async (request, reply) => {
           const result = await handler({
             query: request.query,

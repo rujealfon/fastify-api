@@ -10,7 +10,7 @@ export default createFastifyRpcPlugin(authSchema, {
 
   login: async ({ body, request, reply }) => {
     const user = await authService.loginUser(request.server.db, body)
-    const token = await reply.jwtSign({ sub: user.id, email: user.email })
+    const token = await reply.jwtSign({ sub: user.id, email: user.email, role: user.role })
     return { status: 200 as const, body: { success: true as const, data: { token } } }
   },
 })

@@ -10,7 +10,7 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh:ro
+      - ./docker/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
@@ -77,8 +77,30 @@ services:
       - '4983:4983'
     volumes:
       - ./drizzle.config.ts:/app/drizzle.config.ts:ro
-      - ./src/db/schema:/app/src/db/schema:ro
+      - ./tsconfig.json:/app/tsconfig.json:ro
+      - ./src:/app/src:ro
       - ./migrations:/app/migrations
+
+  # prod:
+  #   build:
+  #     context: .
+  #     target: production
+  #   container_name: fastify_prod
+  #   restart: unless-stopped
+  #   command: ['node', 'dist/server.js']
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     HOST: 0.0.0.0
+  #     NODE_ENV: production
+  #     DATABASE_URL: postgres://postgres:password@postgres:5432/fastify_dev
+  #     JWT_SECRET: change_this_to_a_random_string_at_least_32_characters
+  #     REDIS_URL: redis://redis:6379
+  #   ports:
+  #     - '8000:8000'
 
   cleanup:
     build:

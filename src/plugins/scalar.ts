@@ -5,6 +5,10 @@ import fp from 'fastify-plugin'
 import { jsonSchemaTransform } from 'fastify-type-provider-zod'
 
 const scalarPlugin: FastifyPluginAsync = async (fastify) => {
+  // Don't expose the API surface (spec + docs UI) publicly in production.
+  if (fastify.config.NODE_ENV === 'production')
+    return
+
   await fastify.register(openapi, {
     openapi: {
       openapi: '3.0.0',
@@ -16,7 +20,7 @@ const scalarPlugin: FastifyPluginAsync = async (fastify) => {
       servers: [
         {
           url: `http://${fastify.config.HOST}:${fastify.config.PORT}`,
-          description: fastify.config.NODE_ENV === 'production' ? 'Production' : 'Development',
+          description: 'Development',
         },
       ],
       tags: [

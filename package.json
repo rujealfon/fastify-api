@@ -3,7 +3,8 @@
 	"version": "1.0.0",
 	"type": "module",
 	"scripts": {
-		"build": "docker exec fastify_app nubx tsc && tsc-alias",
+		"build": "docker exec fastify_app nubx tsc && docker exec fastify_app nubx tsc-alias && docker cp fastify_app:/app/dist ./dist",
+		"start": "docker exec fastify_app node dist/server.js",
 		"db:generate": "docker exec fastify_drizzle_studio nubx drizzle-kit generate",
 		"db:migrate": "docker exec fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate && docker exec -e DATABASE_URL=postgres://postgres:password@postgres:5432/fastify_test fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate",
 		"lint": "docker exec fastify_app nubx eslint src",
