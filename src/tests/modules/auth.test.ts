@@ -121,6 +121,21 @@ describe('auth API', () => {
       expect(data).not.toHaveProperty('token')
     })
 
+    it('cookie authenticates protected routes', async () => {
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: 'dave@example.com', password: 'password123' },
+      })
+      const token = firstCookieHeader(loginRes.headers['set-cookie']).split(';')[0]
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/profile',
+        headers: { cookie: token },
+      })
+      expect(res.statusCode).toBe(200)
+    })
+
     it('returns 401 for wrong password', async () => {
       const res = await app.inject({
         method: 'POST',
