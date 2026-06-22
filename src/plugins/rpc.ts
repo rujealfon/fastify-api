@@ -42,6 +42,7 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
         url: route.path,
         schema: {
           ...(route.tags !== undefined && { tags: route.tags }),
+          ...((route.auth || route.admin) && { security: [{ cookieAuth: [] }, { bearerAuth: [] }] }),
           ...(route.query !== undefined && { querystring: route.query }),
           ...(route.params !== undefined && { params: route.params }),
           ...(route.body !== undefined && { body: route.body }),

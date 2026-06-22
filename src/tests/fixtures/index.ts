@@ -27,8 +27,7 @@ export async function registerAndLogin(
     url: '/api/v1/auth/login',
     payload: { email: user.email, password: user.password },
   })
-  const { data } = res.json<{ data: { token: string } }>()
-  return data.token
+  return extractTokenFromCookie(res.headers['set-cookie'])
 }
 
 export async function registerAdminAndLogin(
@@ -42,5 +41,16 @@ export async function registerAdminAndLogin(
     url: '/api/v1/auth/login',
     payload: { email: user.email, password: user.password },
   })
-  return res.json<{ data: { token: string } }>().data.token
+  return extractTokenFromCookie(res.headers['set-cookie'])
+}
+
+export function firstCookieHeader(setCookie: string | string[] | undefined): string {
+  return Array.isArray(setCookie) ? setCookie[0] : setCookie ?? ''
+}
+
+export function extractTokenFromCookie(setCookie: string | string[] | undefined): string {
+  const token = firstCookieHeader(setCookie).split(';')[0].replace(/^token=/, '')
+  if (!token)
+    throw new Error('token cookie not found in Set-Cookie header')
+  return token
 }

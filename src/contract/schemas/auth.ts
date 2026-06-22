@@ -1,9 +1,10 @@
 import type { RouteMap } from '@/contract/types.js'
+import { z } from 'zod'
 import { apiErrorSchema, apiSuccessSchema } from '@/common/schemas/index.js'
 import {
-  authTokensSchema,
   authUserSchema,
   loginBodySchema,
+  loginResponseSchema,
   registerBodySchema,
 } from '@/modules/auth/schemas/index.js'
 
@@ -24,8 +25,27 @@ export const authSchema = {
     tags: ['Auth'],
     body: loginBodySchema,
     responses: {
-      200: apiSuccessSchema(authTokensSchema),
+      200: apiSuccessSchema(authUserSchema),
       401: apiErrorSchema,
+    },
+  },
+  mobileLogin: {
+    method: 'POST' as const,
+    path: '/api/v1/auth/mobile/login',
+    tags: ['Auth'],
+    body: loginBodySchema,
+    responses: {
+      200: apiSuccessSchema(loginResponseSchema),
+      401: apiErrorSchema,
+      403: apiErrorSchema,
+    },
+  },
+  logout: {
+    method: 'POST' as const,
+    path: '/api/v1/auth/logout',
+    tags: ['Auth'],
+    responses: {
+      200: apiSuccessSchema(z.null()),
     },
   },
 } satisfies RouteMap

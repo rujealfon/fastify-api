@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, resetDb } from '@/tests/fixtures/index.js'
+import { createTestApp, extractTokenFromCookie, firstCookieHeader, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 describe('auth API', () => {
   let app: FastifyInstance
@@ -19,7 +19,7 @@ describe('auth API', () => {
 
   // ── POST /api/v1/auth/register ─────────────────────────────────────────────
 
-  describe('pOST /api/v1/auth/register', () => {
+  describe('/api/v1/auth/register POST', () => {
     it('creates a user and returns id + email', async () => {
       const res = await app.inject({
         method: 'POST',
@@ -87,7 +87,7 @@ describe('auth API', () => {
 
   // ── POST /api/v1/auth/login ────────────────────────────────────────────────
 
-  describe('pOST /api/v1/auth/login', () => {
+  describe('/api/v1/auth/login POST', () => {
     beforeEach(async () => {
       await app.inject({
         method: 'POST',
@@ -96,16 +96,29 @@ describe('auth API', () => {
       })
     })
 
-    it('returns a JWT token on valid credentials', async () => {
+    it('sets an httpOnly cookie on valid credentials', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
         payload: { email: 'dave@example.com', password: 'password123' },
       })
       expect(res.statusCode).toBe(200)
-      const { data } = res.json<{ data: { token: string } }>()
-      expect(typeof data.token).toBe('string')
-      expect(data.token.length).toBeGreaterThan(0)
+      const cookie = firstCookieHeader(res.headers['set-cookie'])
+      expect(cookie).toMatch(/^token=/)
+      expect(cookie).toContain('HttpOnly')
+    })
+
+    it('returns user id and email in the response body', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: 'dave@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(200)
+      const { data } = res.json<{ data: { id: string, email: string } }>()
+      expect(data.id).toBeDefined()
+      expect(data.email).toBe('dave@example.com')
+      expect(data).not.toHaveProperty('token')
     })
 
     it('returns 401 for wrong password', async () => {
@@ -136,6 +149,122 @@ describe('auth API', () => {
     })
   })
 
+  // ── POST /api/v1/auth/mobile/login ────────────────────────────────────────────
+
+  describe('/api/v1/auth/mobile/login POST', () => {
+    beforeEach(async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'mobile@example.com', password: 'password123' },
+      })
+    })
+
+    it('returns token in body and sets no cookie (capacitor origin)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        headers: { origin: 'capacitor://localhost' },
+        payload: { email: 'mobile@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(200)
+      const { data } = res.json<{ data: { id: string, email: string, token: string } }>()
+      expect(data.token).toBeDefined()
+      expect(data.id).toBeDefined()
+      expect(data.email).toBe('mobile@example.com')
+      expect(res.headers['set-cookie']).toBeUndefined()
+    })
+
+    it('accepts http://localhost origin (Android WebView)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        headers: { origin: 'http://localhost' },
+        payload: { email: 'mobile@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(200)
+    })
+
+    it('returned token authenticates protected routes as Bearer', async () => {
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        headers: { origin: 'capacitor://localhost' },
+        payload: { email: 'mobile@example.com', password: 'password123' },
+      })
+      const { data } = loginRes.json<{ data: { token: string } }>()
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/profile',
+        headers: { authorization: `Bearer ${data.token}` },
+      })
+      expect(res.statusCode).toBe(200)
+    })
+
+    it('returns 403 for disallowed origin', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        headers: { origin: 'https://evil.com' },
+        payload: { email: 'mobile@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('returns 403 when origin header is absent', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        payload: { email: 'mobile@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('returns 401 for wrong password', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        headers: { origin: 'capacitor://localhost' },
+        payload: { email: 'mobile@example.com', password: 'wrongpassword' },
+      })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('returns 401 for unknown email', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        headers: { origin: 'capacitor://localhost' },
+        payload: { email: 'ghost@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('returns 400 when body is empty', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        headers: { origin: 'capacitor://localhost' },
+        payload: {},
+      })
+      expect(res.statusCode).toBe(400)
+    })
+  })
+
+  // ── POST /api/v1/auth/logout ──────────────────────────────────────────────────
+
+  describe('/api/v1/auth/logout POST ', () => {
+    it('clears the token cookie', async () => {
+      const token = await registerAndLogin(app, { email: 'logout@example.com', password: 'password123' })
+      const res = await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { cookie: `token=${token}` } })
+      expect(res.statusCode).toBe(200)
+      const cookie = firstCookieHeader(res.headers['set-cookie'])
+      expect(cookie).toMatch(/^token=(?:;|$)/)
+      expect(cookie).toContain('Max-Age=0')
+    })
+  })
+
   // ── Account retention: reactivation within the 90-day window ────────────────
 
   describe('account reactivation', () => {
@@ -147,8 +276,8 @@ describe('auth API', () => {
     // Register, then soft-delete the account. Returns the created id.
     async function registerThenDelete(email: string) {
       const { data: created } = (await register(email, 'password123')).json<{ data: { id: string } }>()
-      const { data: auth } = (await login(email, 'password123')).json<{ data: { token: string } }>()
-      await app.inject({ method: 'DELETE', url: `/api/v1/users/${created.id}`, headers: { authorization: `Bearer ${auth.token}` } })
+      const token = extractTokenFromCookie((await login(email, 'password123')).headers['set-cookie'])
+      await app.inject({ method: 'DELETE', url: `/api/v1/users/${created.id}`, headers: { authorization: `Bearer ${token}` } })
       return created.id
     }
 
@@ -164,8 +293,8 @@ describe('auth API', () => {
     it('restores the account\'s profile data on reactivation', async () => {
       const email = 'iris@example.com'
       const { data: created } = (await register(email, 'password123')).json<{ data: { id: string } }>()
-      const { data: auth } = (await login(email, 'password123')).json<{ data: { token: string } }>()
-      const headers = { authorization: `Bearer ${auth.token}` }
+      const token = extractTokenFromCookie((await login(email, 'password123')).headers['set-cookie'])
+      const headers = { authorization: `Bearer ${token}` }
 
       // set some profile data, then self-delete
       await app.inject({ method: 'PATCH', url: `/api/v1/users/${created.id}`, headers, payload: { profile: { firstName: 'Iris' } } })
@@ -173,8 +302,8 @@ describe('auth API', () => {
 
       // reactivate, then confirm the profile data survived
       await register(email, 'password123')
-      const { data: auth2 } = (await login(email, 'password123')).json<{ data: { token: string } }>()
-      const me = await app.inject({ method: 'GET', url: '/api/v1/profile', headers: { authorization: `Bearer ${auth2.token}` } })
+      const token2 = extractTokenFromCookie((await login(email, 'password123')).headers['set-cookie'])
+      const me = await app.inject({ method: 'GET', url: '/api/v1/profile', headers: { authorization: `Bearer ${token2}` } })
       expect(me.statusCode).toBe(200)
       expect(me.json<{ data: { profile: { firstName: string | null } } }>().data.profile.firstName).toBe('Iris')
     })

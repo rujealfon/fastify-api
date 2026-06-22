@@ -19,7 +19,7 @@ const scalarPlugin: FastifyPluginAsync = async (fastify) => {
       },
       servers: [
         {
-          url: `http://${fastify.config.HOST}:${fastify.config.PORT}`,
+          url: `http://localhost:${fastify.config.PORT}`,
           description: 'Development',
         },
       ],
@@ -32,6 +32,11 @@ const scalarPlugin: FastifyPluginAsync = async (fastify) => {
       ],
       components: {
         securitySchemes: {
+          cookieAuth: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: 'token',
+          },
           bearerAuth: {
             type: 'http',
             scheme: 'bearer',

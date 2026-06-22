@@ -40,7 +40,7 @@ afterAll(async () => { await app.close() })
 
 ### `registerAndLogin(app, user?)`
 
-Registers a user (via `/api/v1/auth/register`) and logs in (via `/api/v1/auth/login`). Returns the JWT string.
+Registers a user (via `/api/v1/auth/register`) and logs in (via `/api/v1/auth/login`). Returns the JWT string extracted from the `Set-Cookie` response header. Pass it as a Bearer token in `app.inject()` calls — `@fastify/jwt` accepts both cookie and Bearer, so this works without a real browser cookie jar.
 
 ```ts
 const token = await registerAndLogin(app)

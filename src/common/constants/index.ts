@@ -6,3 +6,6 @@ export const ROLES = {
   USER: 'user',
   ADMIN: 'admin',
 } as const
+
+/** Allowed origins for the mobile login endpoint. */
+export const MOBILE_ORIGINS: readonly string[] = ['capacitor://localhost', 'http://localhost']
