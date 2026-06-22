@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, registerAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
+import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 interface Profile {
   firstName: string | null
@@ -411,7 +411,7 @@ describe('users API', () => {
       const reg = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email, password: 'password123' } })
       const id = reg.json<{ data: { id: string } }>().data.id
       const loginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email, password: 'password123' } })
-      const userToken = loginRes.json<{ data: { token: string } }>().data.token
+      const userToken = extractTokenFromCookie(loginRes.headers['set-cookie'])
       return { id, token: userToken }
     }
 
@@ -472,7 +472,8 @@ describe('users API', () => {
       // attempt mass-assignment of role through the self-update path
       await app.inject({ method: 'PATCH', url: `/api/v1/users/${id}`, headers: auth(t), payload: { email: 'escalate@example.com', role: 'admin' } })
       // re-login so the token reflects any (un)changed role, then probe an admin-only route
-      const fresh = (await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'escalate@example.com', password: 'password123' } })).json<{ data: { token: string } }>().data.token
+      const reloginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'escalate@example.com', password: 'password123' } })
+      const fresh = extractTokenFromCookie(reloginRes.headers['set-cookie'])
       const res = await app.inject({ method: 'GET', url: '/api/v1/users', headers: auth(fresh) })
       expect(res.statusCode).toBe(403)
     })

@@ -115,12 +115,14 @@ All scripts run via `nub` (or `nubx` inside containers). See [package.json](pack
 
 ### Auth
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/v1/auth/register` | Register a new user |
-| POST | `/api/v1/auth/login` | Login and receive a JWT |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/v1/auth/register` | — | Register a new user |
+| POST | `/api/v1/auth/login` | — | Login — sets a `token` httpOnly cookie (web) |
+| POST | `/api/v1/auth/mobile/login` | — | Login for mobile — returns `token` in body, no cookie |
+| POST | `/api/v1/auth/logout` | — | Logout — clears the `token` cookie |
 
-### Users *(JWT required)*
+### Users *(cookie or Bearer token required)*
 
 | Method | Path | Description |
 |---|---|---|
@@ -130,7 +132,7 @@ All scripts run via `nub` (or `nubx` inside containers). See [package.json](pack
 | PATCH | `/api/v1/users/:id` | Update a user |
 | DELETE | `/api/v1/users/:id` | Soft-delete a user |
 
-### Products *(JWT required)*
+### Products *(cookie or Bearer token required)*
 
 | Method | Path | Description |
 |---|---|---|
@@ -162,7 +164,13 @@ All list endpoints accept `?page=1&limit=10` query parameters.
 
 ### Authentication
 
-Include the JWT from the login response as a Bearer token:
+Two login endpoints cover the two client types:
+
+| Client | Endpoint | Strategy |
+|---|---|---|
+| Web browser | `POST /api/v1/auth/login` | Sets an httpOnly cookie (`SameSite=Strict`, `Secure` in production) — sent automatically on every request |
+| Mobile app (Ionic/Capacitor, React Native) | `POST /api/v1/auth/mobile/login` | Returns `data.token` in the response body, no cookie — store in secure storage and send as `Authorization: Bearer <token>` |
+| Server-to-server / tests | Either | Bearer token is simpler |
 
 ```
 Authorization: Bearer <token>
@@ -176,15 +184,18 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"name":"Alice","email":"alice@example.com","password":"secret1234"}'
 
-# Login
+# Login — cookie is saved to jar.txt
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"alice@example.com","password":"secret1234"}'
-# → {"success":true,"data":{"token":"<jwt>"}}
+  -d '{"email":"alice@example.com","password":"secret1234"}' \
+  -c jar.txt
+# → {"success":true,"data":{"id":"...","email":"alice@example.com"}}
 
-# List users (authenticated)
-curl http://localhost:3000/api/v1/users \
-  -H 'Authorization: Bearer <token>'
+# List users — cookie sent automatically from jar.txt
+curl http://localhost:3000/api/v1/users -b jar.txt
+
+# Logout — clears the cookie
+curl -X POST http://localhost:3000/api/v1/auth/logout -b jar.txt -c jar.txt
 
 # Prometheus metrics
 curl http://localhost:3000/metrics
