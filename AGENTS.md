@@ -27,6 +27,10 @@ Tests use Vitest and exercise the real database and Redis; do not mock these dep
 
 Recent commits use concise, imperative summaries such as `Add profile module with API endpoint for user data retrieval` and `Refactor API response structure for consistency and clarity`. Keep commits focused and describe the behavior changed. Pull requests should include a short summary, relevant issue links, migration notes when database schema changes, and the commands run for validation.
 
+## Database Schema Conventions
+
+All `timestamp` columns use `{ withTimezone: true }` (maps to Postgres `TIMESTAMPTZ`). Postgres stores these internally as UTC and converts on read, so values are always timezone-safe regardless of the DB session timezone. Never use bare `timestamp()` for new columns.
+
 ## Architecture & Configuration Notes
 
 Preserve the plugin registration order in `app.ts`: `env` first, Redis before rate limiting, and request context before auth and request ID hooks. Domain errors should extend `AppError` and use existing subclasses such as `NotFoundError`, `UnauthorizedError`, `ConflictError`, and `ValidationError`. Copy `.env.example` to `.env`; required variables include `DATABASE_URL`, `JWT_SECRET`, and `REDIS_URL`.
