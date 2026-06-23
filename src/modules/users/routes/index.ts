@@ -15,8 +15,8 @@ function assertSelfOrAdmin(request: { requestContext: { get: (k: 'userId' | 'rol
 export default createFastifyRpcPlugin(usersSchema, {
   list: async ({ query, request }) => {
     const { page, limit } = query
-    const data = await userService.findAllUsers(request.server.db, page, limit)
-    return { status: 200 as const, body: { success: true as const, data, pagination: { page, limit, total: data.length } } }
+    const { data, total } = await userService.findAllUsers(request.server.db, page, limit)
+    return { status: 200 as const, body: { success: true as const, data, pagination: { page, limit, total } } }
   },
 
   get: async ({ params, request }) => {

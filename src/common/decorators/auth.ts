@@ -14,6 +14,7 @@ const authDecorator: FastifyPluginAsync = async (fastify) => {
     try {
       await request.jwtVerify()
       const payload = request.user as { sub?: string, id?: string, role?: string }
+      // RFC 7519 uses 'sub'; legacy tokens from older sign() calls used 'id'.
       const userId = payload.sub ?? payload.id
       if (userId) {
         request.requestContext.set('userId', userId)

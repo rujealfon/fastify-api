@@ -9,7 +9,8 @@
 		"db:migrate": "docker exec fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate && docker exec -e DATABASE_URL=postgres://postgres:password@postgres:5432/fastify_test fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate",
 		"lint": "docker exec fastify_app nubx eslint src",
 		"lint:fix": "docker exec fastify_app nubx eslint src --fix",
-		"test:unit": "docker exec -e NODE_ENV=test fastify_app nubx vitest run"
+		"test:unit": "docker exec -e NODE_ENV=test fastify_app nubx vitest run",
+		"prepare": "husky"
 	},
 	"dependencies": {
 		"@fastify/compress": "^9.0.0",
@@ -46,6 +47,7 @@
 		"@types/node": "^25.9.4",
 		"drizzle-kit": "^0.31.10",
 		"eslint": "^10.5.0",
+		"husky": "^9.1.7",
 		"tsc-alias": "^1.8.17",
 		"typescript": "^5.9.3",
 		"vitest": "^4.1.9"

@@ -5,8 +5,8 @@ import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 export default createFastifyRpcPlugin(productsSchema, {
   list: async ({ query, request }) => {
     const { page, limit } = query
-    const data = await productService.findAllProducts(request.server.db, page, limit)
-    return { status: 200 as const, body: { success: true as const, data, pagination: { page, limit, total: data.length } } }
+    const { data, total } = await productService.findAllProducts(request.server.db, page, limit)
+    return { status: 200 as const, body: { success: true as const, data, pagination: { page, limit, total } } }
   },
 
   get: async ({ params, request }) => {

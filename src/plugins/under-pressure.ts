@@ -3,6 +3,8 @@ import underPressure from '@fastify/under-pressure'
 import fp from 'fastify-plugin'
 
 const underPressurePlugin: FastifyPluginAsync = async (fastify) => {
+  // Pressure thresholds (heap, event-loop delay) are routinely exceeded inside
+  // the test container, which would make every request return 503.
   if (fastify.config.NODE_ENV === 'test')
     return
 

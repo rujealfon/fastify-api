@@ -1,6 +1,6 @@
 import type { Db } from '@/db/index.js'
 import type { CreateProductBody, UpdateProductBody } from '@/modules/products/schemas/index.js'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, count, eq, isNull } from 'drizzle-orm'
 import { NotFoundError } from '@/common/errors/NotFoundError.js'
 import { products } from '@/db/schema/index.js'
 
@@ -25,13 +25,16 @@ function toProduct(row: {
 }
 
 export async function findAllProducts(db: Db, page: number, limit: number) {
-  const rows = await db.query.products.findMany({
-    columns: productColumns,
-    where: isNull(products.deletedAt),
-    offset: (page - 1) * limit,
-    limit,
-  })
-  return rows.map(toProduct)
+  const [rows, [{ total }]] = await Promise.all([
+    db.query.products.findMany({
+      columns: productColumns,
+      where: isNull(products.deletedAt),
+      offset: (page - 1) * limit,
+      limit,
+    }),
+    db.select({ total: count() }).from(products).where(isNull(products.deletedAt)),
+  ])
+  return { data: rows.map(toProduct), total }
 }
 
 export async function findProductById(db: Db, id: string) {
@@ -47,6 +50,8 @@ export async function findProductById(db: Db, id: string) {
 export async function createProduct(db: Db, body: CreateProductBody) {
   const [row] = await db
     .insert(products)
+    // Drizzle's numeric column returns and expects strings to preserve arbitrary
+    // precision; the Zod schema accepts number so we convert at the boundary.
     .values({ name: body.name, price: String(body.price), stock: body.stock })
     .returning({ id: products.id, name: products.name, price: products.price, stock: products.stock, createdAt: products.createdAt, updatedAt: products.updatedAt })
   return toProduct(row)
@@ -58,7 +63,7 @@ export async function updateProduct(db: Db, id: string, body: UpdateProductBody)
     .update(products)
     .set({
       ...(body.name !== undefined && { name: body.name }),
-      ...(body.price !== undefined && { price: String(body.price) }),
+      ...(body.price !== undefined && { price: String(body.price) }), // see createProduct
       ...(body.stock !== undefined && { stock: body.stock }),
     })
     .where(eq(products.id, id))
