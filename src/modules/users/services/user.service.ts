@@ -1,7 +1,7 @@
 import type { Db } from '@/db/index.js'
 import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
 import bcrypt from 'bcryptjs'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, count, eq, isNull } from 'drizzle-orm'
 import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
 import { ConflictError } from '@/common/errors/ConflictError.js'
 import { NotFoundError } from '@/common/errors/NotFoundError.js'
@@ -56,14 +56,17 @@ function toUser(row: UserRow) {
 }
 
 export async function findAllUsers(db: Db, page: number, limit: number) {
-  const rows = await db.query.users.findMany({
-    columns: userColumns,
-    with: { profile: { columns: profileColumns } },
-    where: isNull(users.deletedAt),
-    offset: (page - 1) * limit,
-    limit,
-  })
-  return rows.map(toUser)
+  const [rows, [{ total }]] = await Promise.all([
+    db.query.users.findMany({
+      columns: userColumns,
+      with: { profile: { columns: profileColumns } },
+      where: isNull(users.deletedAt),
+      offset: (page - 1) * limit,
+      limit,
+    }),
+    db.select({ total: count() }).from(users).where(isNull(users.deletedAt)),
+  ])
+  return { data: rows.map(toUser), total }
 }
 
 export async function findUserById(db: Db, id: string) {
@@ -92,6 +95,8 @@ export async function createUser(db: Db, body: CreateUserBody) {
 
     await tx.insert(profiles).values({ userId: row.id })
 
+    // Profile row was just inserted but not returned; pass null and let toUser
+    // fill in the empty shape so the response contract is always complete.
     return toUser({ ...row, profile: null })
   })
 }
