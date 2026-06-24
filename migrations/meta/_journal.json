@@ -36,6 +36,13 @@
       "when": 1782103068670,
       "tag": "0004_rainy_secret_warriors",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782221158369,
+      "tag": "0005_hard_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

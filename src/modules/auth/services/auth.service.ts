@@ -6,6 +6,7 @@ import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
 import { ConflictError } from '@/common/errors/ConflictError.js'
 import { UnauthorizedError } from '@/common/errors/UnauthorizedError.js'
 import { profiles, users } from '@/db/schema/index.js'
+import { logActivity } from '@/modules/activity-logs/helpers/log-activity.js'
 
 export async function registerUser(db: Db, body: RegisterBody) {
   // An email may have at most one active row but several soft-deleted rows
@@ -21,22 +22,25 @@ export async function registerUser(db: Db, body: RegisterBody) {
   const dead = await db.query.users.findFirst({ where: and(eq(users.email, body.email), isNotNull(users.deletedAt)) })
   if (dead && await bcrypt.compare(body.password, dead.passwordHash)) {
     await db.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, dead.id))
+    logActivity(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id, metadata: { email: dead.email } })
     return { id: dead.id, email: dead.email }
   }
 
   const passwordHash = await bcrypt.hash(body.password, 12)
 
   try {
-    return await db.transaction(async (tx) => {
-      const [user] = await tx
+    const user = await db.transaction(async (tx) => {
+      const [row] = await tx
         .insert(users)
         .values({ email: body.email, passwordHash })
         .returning({ id: users.id, email: users.email })
 
-      await tx.insert(profiles).values({ userId: user.id })
+      await tx.insert(profiles).values({ userId: row.id })
 
-      return user
+      return row
     })
+    logActivity(db, { userId: user.id, action: 'auth.registered', resourceType: 'user', resourceId: user.id, metadata: { email: user.email } })
+    return user
   }
   catch (err) {
     // Two concurrent registrations of the same new email race past the active

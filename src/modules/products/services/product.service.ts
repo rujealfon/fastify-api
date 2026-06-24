@@ -72,6 +72,7 @@ export async function updateProduct(db: Db, id: string, body: UpdateProductBody)
 }
 
 export async function deleteProduct(db: Db, id: string) {
-  await findProductById(db, id)
+  const product = await findProductById(db, id)
   await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, id))
+  return product
 }
