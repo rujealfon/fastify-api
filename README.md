@@ -142,6 +142,15 @@ All scripts run via `nub` (or `nubx` inside containers). See [package.json](pack
 | PATCH | `/api/v1/products/:id` | Update a product |
 | DELETE | `/api/v1/products/:id` | Soft-delete a product |
 
+### Activity Logs *(cookie or Bearer token required)*
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/v1/activity-logs` | Admin | List all activity logs (paginated) |
+| GET | `/api/v1/users/:id/activity-logs` | Self or Admin | List logs for a specific user |
+
+Each log entry records `action`, `resource_type`, `resource_id`, `metadata`, and `created_at`. Logged actions: `auth.registered`, `auth.logged_in`, `auth.logged_out`, `auth.account_restored`, `user.created`, `user.updated`, `user.deleted`, `product.created`, `product.updated`, `product.deleted`.
+
 ### Health
 
 | Method | Path | Description |
@@ -231,4 +240,5 @@ Errors from the server surface as `RpcError` (with `.status` and `.data`) on the
 - **Error handling** is centralized in `app.ts` via `setErrorHandler`. All domain errors extend `AppError`.
 - **Rate limiting** uses Redis as the store — safe for multi-instance / horizontally scaled deployments.
 - **Request context** (`@fastify/request-context`) stores `requestId` and `userId` via AsyncLocalStorage, accessible anywhere in the call stack without passing them explicitly.
+- **Activity logging** is fire-and-forget (`logActivity` in `src/modules/activity-logs/helpers/`) — inserts never block the request path. Failures are silently swallowed so a logging error never surfaces to the caller.
 - **Graceful shutdown** is handled in `server.ts` — `SIGINT`/`SIGTERM` closes Fastify (draining connections) and flushes OpenTelemetry spans before exiting.

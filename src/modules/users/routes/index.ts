@@ -1,6 +1,7 @@
 import { ROLES } from '@/common/constants/index.js'
 import { ForbiddenError } from '@/common/errors/ForbiddenError.js'
 import { usersSchema } from '@/contract/schemas/users.js'
+import { logActivity } from '@/modules/activity-logs/helpers/log-activity.js'
 import * as userService from '@/modules/users/services/user.service.js'
 import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
@@ -26,19 +27,22 @@ export default createFastifyRpcPlugin(usersSchema, {
 
   create: async ({ body, request }) => {
     const user = await userService.createUser(request.server.db, body)
+    logActivity(request.server.db, { userId: request.requestContext.get('userId'), action: 'user.created', resourceType: 'user', resourceId: user.id, metadata: { email: user.email } })
     return { status: 201 as const, body: { success: true as const, data: user } }
   },
 
   update: async ({ params, body, request }) => {
     assertSelfOrAdmin(request, params.id)
     const user = await userService.updateUser(request.server.db, params.id, body)
+    logActivity(request.server.db, { userId: request.requestContext.get('userId'), action: 'user.updated', resourceType: 'user', resourceId: params.id, metadata: { changes: body } })
     return { status: 200 as const, body: { success: true as const, data: user } }
   },
 
   delete: async ({ params, request }) => {
     assertSelfOrAdmin(request, params.id)
-    const actorId = request.requestContext.get('userId') as string | undefined
+    const actorId = request.requestContext.get('userId')
     await userService.deleteUser(request.server.db, params.id, actorId)
+    logActivity(request.server.db, { userId: actorId, action: 'user.deleted', resourceType: 'user', resourceId: params.id })
     return { status: 204 as const, body: null }
   },
 })
