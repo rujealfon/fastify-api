@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
 import type { z } from 'zod'
 import type { RouteMap } from '@/contract/types.js'
+import { PERMISSIONS } from '@/common/constants/index.js'
 
 interface HandlerInput<T extends { query?: z.ZodType, params?: z.ZodType, body?: z.ZodType }> {
   query: T['query'] extends z.ZodType ? z.infer<T['query']> : undefined
@@ -32,10 +33,12 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
         continue
 
       const preValidation = []
-      if (route.auth || route.admin)
+      if (route.auth || route.admin || route.permission)
         preValidation.push(fastify.authenticate)
       if (route.admin)
-        preValidation.push(fastify.requireAdmin)
+        preValidation.push(fastify.requirePermission(PERMISSIONS.ADMIN_ACCESS))
+      if (route.permission)
+        preValidation.push(fastify.requirePermission(route.permission))
 
       fastify.route({
         method: route.method as any,

@@ -1,4 +1,5 @@
 import type { z } from 'zod'
+import type { Permission } from '@/common/constants/index.js'
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
 
@@ -12,6 +13,7 @@ export interface RouteSchema<
   path: string
   auth?: boolean
   admin?: boolean
+  permission?: Permission
   query?: TQuery
   params?: TParams
   body?: TBody
@@ -23,6 +25,7 @@ export type RouteMap = Record<string, {
   path: string
   auth?: boolean
   admin?: boolean
+  permission?: Permission
   tags?: string[]
   query?: z.ZodType
   params?: z.ZodType

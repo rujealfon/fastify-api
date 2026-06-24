@@ -1,15 +1,17 @@
 import type { Db } from '@/db/index.js'
 import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
 import bcrypt from 'bcryptjs'
-import { and, count, eq, isNull } from 'drizzle-orm'
-import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
+import { and, count, eq, isNull, ne } from 'drizzle-orm'
+import { PG_UNIQUE_VIOLATION, ROLES } from '@/common/constants/index.js'
 import { ConflictError } from '@/common/errors/ConflictError.js'
+import { ForbiddenError } from '@/common/errors/ForbiddenError.js'
 import { NotFoundError } from '@/common/errors/NotFoundError.js'
-import { profiles, users } from '@/db/schema/index.js'
+import { profiles, roles, users } from '@/db/schema/index.js'
 
 const userColumns = {
   id: true,
   email: true,
+  role: true,
   createdAt: true,
   updatedAt: true,
 } as const
@@ -23,9 +25,12 @@ const profileColumns = {
   birthDate: true,
 } as const
 
+type Role = typeof ROLES[keyof typeof ROLES]
+
 interface UserRow {
   id: string
   email: string
+  role: string
   createdAt: Date
   updatedAt: Date
   profile: {
@@ -42,6 +47,7 @@ function toUser(row: UserRow) {
   return {
     id: row.id,
     email: row.email,
+    role: row.role as Role,
     profile: row.profile ?? {
       firstName: null,
       lastName: null,
@@ -91,7 +97,7 @@ export async function createUser(db: Db, body: CreateUserBody) {
     const [row] = await tx
       .insert(users)
       .values({ email: body.email, passwordHash })
-      .returning({ id: users.id, email: users.email, createdAt: users.createdAt, updatedAt: users.updatedAt })
+      .returning({ id: users.id, email: users.email, role: users.role, createdAt: users.createdAt, updatedAt: users.updatedAt })
 
     await tx.insert(profiles).values({ userId: row.id })
 
@@ -127,4 +133,27 @@ export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
 export async function deleteUser(db: Db, id: string, deletedBy?: string) {
   await findUserById(db, id)
   await db.update(users).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(users.id, id))
+}
+
+export async function updateUserRole(db: Db, id: string, role: string, actorRole: string) {
+  const roleRow = await db.query.roles.findFirst({ where: eq(roles.name, role) })
+  if (!roleRow)
+    throw new NotFoundError('Role', role)
+
+  const [updated] = await db
+    .update(users)
+    .set({ role })
+    .where(and(
+      eq(users.id, id),
+      isNull(users.deletedAt),
+      actorRole !== ROLES.SUPER_ADMIN ? ne(users.role, ROLES.SUPER_ADMIN) : undefined,
+    ))
+    .returning({ id: users.id })
+  if (!updated) {
+    const target = await db.query.users.findFirst({ columns: { role: true }, where: and(eq(users.id, id), isNull(users.deletedAt)) })
+    if (!target)
+      throw new NotFoundError('User', id)
+    throw new ForbiddenError('Only super admins can modify a super admin account')
+  }
+  return findUserById(db, id)
 }

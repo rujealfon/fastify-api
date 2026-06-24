@@ -43,6 +43,13 @@
       "when": 1782221158369,
       "tag": "0005_hard_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782308547403,
+      "tag": "0006_stale_jazinda",
+      "breakpoints": true
     }
   ]
 }

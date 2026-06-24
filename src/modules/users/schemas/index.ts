@@ -13,6 +13,7 @@ export const profileSchema = z.object({
 export const userSchema = z.object({
   id: z.uuid().meta({ examples: ['019ee4e4-bd7d-7e0d-8402-eeb73c578a00'] }),
   email: z.email().meta({ examples: ['user@example.com'] }),
+  role: z.string().meta({ examples: ['user'] }),
   profile: profileSchema,
   createdAt: z.iso.datetime().meta({ examples: ['2024-01-15T10:30:00.000Z'] }),
   updatedAt: z.iso.datetime().meta({ examples: ['2024-01-15T10:30:00.000Z'] }),
@@ -41,8 +42,13 @@ export const updateUserBodySchema = z
     message: 'At least one field must be provided (email or profile)',
   })
 
+export const updateUserRoleBodySchema = z.object({
+  role: z.string().min(1).meta({ description: 'Role name to assign' }),
+})
+
 export { uuidParamSchema as userParamsSchema, paginationQuerySchema as userQuerySchema }
 
 export type User = z.infer<typeof userSchema>
 export type CreateUserBody = z.infer<typeof createUserBodySchema>
 export type UpdateUserBody = z.infer<typeof updateUserBodySchema>
+export type UpdateUserRoleBody = z.infer<typeof updateUserRoleBodySchema>

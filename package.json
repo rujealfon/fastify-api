@@ -7,6 +7,7 @@
 		"start": "docker exec fastify_app node dist/server.js",
 		"db:generate": "docker exec fastify_drizzle_studio nubx drizzle-kit generate",
 		"db:migrate": "docker exec fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate && docker exec -e DATABASE_URL=postgres://postgres:password@postgres:5432/fastify_test fastify_drizzle_studio node_modules/.bin/drizzle-kit migrate",
+		"db:seed": "docker exec fastify_app nubx tsx src/db/seed.ts && docker exec -e DATABASE_URL=postgres://postgres:password@postgres:5432/fastify_test fastify_app nubx tsx src/db/seed.ts",
 		"lint": "docker exec fastify_app nubx eslint src",
 		"lint:fix": "docker exec fastify_app nubx eslint src --fix",
 		"test:unit": "docker exec -e NODE_ENV=test fastify_app nubx vitest run",

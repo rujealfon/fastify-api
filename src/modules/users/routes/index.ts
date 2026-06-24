@@ -45,4 +45,11 @@ export default createFastifyRpcPlugin(usersSchema, {
     logActivity(request.server.db, { userId: actorId, action: 'user.deleted', resourceType: 'user', resourceId: params.id })
     return { status: 204 as const, body: null }
   },
+
+  updateRole: async ({ params, body, request }) => {
+    const actorRole = request.requestContext.get('role') ?? ROLES.USER
+    const user = await userService.updateUserRole(request.server.db, params.id, body.role, actorRole)
+    logActivity(request.server.db, { userId: request.requestContext.get('userId'), action: 'user.role_updated', resourceType: 'user', resourceId: params.id, metadata: { role: body.role } })
+    return { status: 200 as const, body: { success: true as const, data: user } }
+  },
 })

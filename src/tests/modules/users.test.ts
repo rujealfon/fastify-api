@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
+import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 interface Profile {
   firstName: string | null
@@ -14,6 +14,7 @@ interface Profile {
 interface User {
   id: string
   email: string
+  role: string
   profile: Profile
   createdAt: string
   updatedAt: string
@@ -212,6 +213,7 @@ describe('users API', () => {
       const { data } = res.json<{ data: User }>()
       expect(data.id).toBeDefined()
       expect(data.email).toBe('new@example.com')
+      expect(data.role).toBe('user')
       expect(data.profile).toMatchObject({
         firstName: null,
         lastName: null,
@@ -403,6 +405,105 @@ describe('users API', () => {
     })
   })
 
+  // ── PATCH /api/v1/users/:id/role ──────────────────────────────────────────
+
+  describe('pATCH /api/v1/users/:id/role', () => {
+    it('admin promotes a user to admin', async () => {
+      const user = await createUser('promote@example.com')
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/users/${user.id}/role`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { role: 'admin' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json<{ data: User }>().data.role).toBe('admin')
+    })
+
+    it('admin demotes an admin back to user', async () => {
+      const user = await createUser('demote@example.com')
+      await app.inject({ method: 'PATCH', url: `/api/v1/users/${user.id}/role`, headers: { authorization: `Bearer ${token}` }, payload: { role: 'admin' } })
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/users/${user.id}/role`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { role: 'user' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json<{ data: User }>().data.role).toBe('user')
+    })
+
+    it('returns 404 for unknown user id', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/users/00000000-0000-0000-0000-000000000000/role',
+        headers: { authorization: `Bearer ${token}` },
+        payload: { role: 'admin' },
+      })
+      expect(res.statusCode).toBe(404)
+    })
+
+    it('returns 404 for non-existent role name', async () => {
+      const user = await createUser('badrole@example.com')
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/users/${user.id}/role`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { role: 'superuser' },
+      })
+      expect(res.statusCode).toBe(404)
+    })
+
+    it('promoted user can access admin-only route after re-login', async () => {
+      const user = await createUser('newly-admin@example.com', 'password123')
+      await app.inject({ method: 'PATCH', url: `/api/v1/users/${user.id}/role`, headers: { authorization: `Bearer ${token}` }, payload: { role: 'admin' } })
+      const freshLogin = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'newly-admin@example.com', password: 'password123' } })
+      const freshToken = extractTokenFromCookie(freshLogin.headers['set-cookie'])
+      const res = await app.inject({ method: 'GET', url: '/api/v1/users', headers: { authorization: `Bearer ${freshToken}` } })
+      expect(res.statusCode).toBe(200)
+    })
+
+    it('admin can assign super_admin role', async () => {
+      const user = await createUser('to-super@example.com')
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/users/${user.id}/role`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { role: 'super_admin' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json<{ data: User }>().data.role).toBe('super_admin')
+    })
+
+    it('admin cannot modify a super_admin account', async () => {
+      const superToken = await registerSuperAdminAndLogin(app, { email: 'protected@example.com', password: 'password123' })
+      const loginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'protected@example.com', password: 'password123' } })
+      const superUserId = loginRes.json<{ data: { id: string } }>().data.id
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/users/${superUserId}/role`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { role: 'user' },
+      })
+      expect(res.statusCode).toBe(403)
+      void superToken
+    })
+
+    it('super_admin can modify another super_admin account', async () => {
+      const superToken = await registerSuperAdminAndLogin(app, { email: 'sa1@example.com', password: 'password123' })
+      const loginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'sa1@example.com', password: 'password123' } })
+      const superUserId = loginRes.json<{ data: { id: string } }>().data.id
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/users/${superUserId}/role`,
+        headers: { authorization: `Bearer ${superToken}` },
+        payload: { role: 'admin' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json<{ data: User }>().data.role).toBe('admin')
+    })
+  })
+
   // ── Authorization model (admin-only vs self-or-admin) ──────────────────────
 
   describe('authorization', () => {
@@ -465,6 +566,12 @@ describe('users API', () => {
       const b = await registerNormal('n8b@example.com')
       const res = await app.inject({ method: 'DELETE', url: `/api/v1/users/${b.id}`, headers: { authorization: `Bearer ${token}` } })
       expect(res.statusCode).toBe(204)
+    })
+
+    it('forbids a non-admin from assigning roles', async () => {
+      const { id, token: t } = await registerNormal('role-nonadmin@example.com')
+      const res = await app.inject({ method: 'PATCH', url: `/api/v1/users/${id}/role`, headers: auth(t), payload: { role: 'admin' } })
+      expect(res.statusCode).toBe(403)
     })
 
     it('does not let a user escalate to admin via the update body', async () => {

@@ -24,11 +24,14 @@ const scalarPlugin: FastifyPluginAsync = async (fastify) => {
         },
       ],
       tags: [
+        { name: 'Activity Logs', description: 'Activity log endpoints' },
         { name: 'Auth', description: 'Authentication endpoints' },
-        { name: 'Users', description: 'User management endpoints' },
-        { name: 'Profile', description: 'Authenticated user self-management endpoints' },
-        { name: 'Products', description: 'Product management endpoints' },
         { name: 'Health', description: 'Health check endpoints' },
+        { name: 'Permissions', description: 'Permission management endpoints' },
+        { name: 'Products', description: 'Product management endpoints' },
+        { name: 'Profile', description: 'Authenticated user self-management endpoints' },
+        { name: 'Roles', description: 'Role management endpoints' },
+        { name: 'Users', description: 'User management endpoints' },
       ],
       components: {
         securitySchemes: {

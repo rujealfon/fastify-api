@@ -4,6 +4,7 @@ import { apiErrorSchema, apiListSchema, apiSuccessSchema, paginationQuerySchema,
 import {
   createUserBodySchema,
   updateUserBodySchema,
+  updateUserRoleBodySchema,
   userSchema,
 } from '@/modules/users/schemas/index.js'
 
@@ -69,6 +70,20 @@ export const usersSchema = {
     params: uuidParamSchema,
     responses: {
       204: z.null(),
+      401: apiErrorSchema,
+      403: apiErrorSchema,
+      404: apiErrorSchema,
+    },
+  },
+  updateRole: {
+    method: 'PATCH' as const,
+    path: '/api/v1/users/:id/role',
+    tags: ['Users'],
+    admin: true,
+    params: uuidParamSchema,
+    body: updateUserRoleBodySchema,
+    responses: {
+      200: apiSuccessSchema(userSchema),
       401: apiErrorSchema,
       403: apiErrorSchema,
       404: apiErrorSchema,

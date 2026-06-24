@@ -27,4 +27,5 @@ export type LoginResponse = z.infer<typeof loginResponseSchema>
 export interface JwtPayload {
   sub: string
   email: string
+  role: string
 }
