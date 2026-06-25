@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const activityLogSchema = z.object({
+export const auditLogSchema = z.object({
   id: z.uuid(),
   userId: z.uuid().nullable(),
   action: z.string(),
@@ -10,4 +10,4 @@ export const activityLogSchema = z.object({
   createdAt: z.iso.datetime(),
 })
 
-export type ActivityLog = z.infer<typeof activityLogSchema>
+export type AuditLog = z.infer<typeof auditLogSchema>

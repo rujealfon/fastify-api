@@ -4,7 +4,7 @@ import { createTestApp, registerAdminAndLogin, registerAndLogin, resetDb } from 
 
 const settle = () => new Promise<void>(r => setTimeout(r, 50))
 
-describe('activity logs API', () => {
+describe('audit logs API', () => {
   let app: FastifyInstance
 
   beforeAll(async () => {
@@ -19,7 +19,7 @@ describe('activity logs API', () => {
 
   describe('list all logs (admin)', () => {
     it('returns 401 without token', async () => {
-      const res = await app.inject({ method: 'GET', url: '/api/v1/activity-logs' })
+      const res = await app.inject({ method: 'GET', url: '/api/v1/audit-logs' })
       expect(res.statusCode).toBe(401)
     })
 
@@ -27,7 +27,7 @@ describe('activity logs API', () => {
       const token = await registerAndLogin(app)
       const res = await app.inject({
         method: 'GET',
-        url: '/api/v1/activity-logs',
+        url: '/api/v1/audit-logs',
         headers: { authorization: `Bearer ${token}` },
       })
       expect(res.statusCode).toBe(403)
@@ -37,7 +37,7 @@ describe('activity logs API', () => {
       const token = await registerAdminAndLogin(app)
       const res = await app.inject({
         method: 'GET',
-        url: '/api/v1/activity-logs',
+        url: '/api/v1/audit-logs',
         headers: { authorization: `Bearer ${token}` },
       })
       expect(res.statusCode).toBe(200)
@@ -53,7 +53,7 @@ describe('activity logs API', () => {
       await settle()
       const res = await app.inject({
         method: 'GET',
-        url: '/api/v1/activity-logs',
+        url: '/api/v1/audit-logs',
         headers: { authorization: `Bearer ${token}` },
       })
       const body = res.json()
@@ -66,7 +66,7 @@ describe('activity logs API', () => {
       const token = await registerAdminAndLogin(app)
       const res = await app.inject({
         method: 'GET',
-        url: '/api/v1/activity-logs?page=1&limit=1',
+        url: '/api/v1/audit-logs?page=1&limit=1',
         headers: { authorization: `Bearer ${token}` },
       })
       expect(res.statusCode).toBe(200)
@@ -78,7 +78,7 @@ describe('activity logs API', () => {
 
   describe('list logs for user', () => {
     it('returns 401 without token', async () => {
-      const res = await app.inject({ method: 'GET', url: '/api/v1/users/019ee4e4-bd7d-7e0d-8402-eeb73c578a00/activity-logs' })
+      const res = await app.inject({ method: 'GET', url: '/api/v1/users/019ee4e4-bd7d-7e0d-8402-eeb73c578a00/audit-logs' })
       expect(res.statusCode).toBe(401)
     })
 
@@ -96,7 +96,7 @@ describe('activity logs API', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/v1/users/${otherId}/activity-logs`,
+        url: `/api/v1/users/${otherId}/audit-logs`,
         headers: { authorization: `Bearer ${token}` },
       })
       expect(res.statusCode).toBe(403)
@@ -113,7 +113,7 @@ describe('activity logs API', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/v1/users/${userId}/activity-logs`,
+        url: `/api/v1/users/${userId}/audit-logs`,
         headers: { authorization: `Bearer ${token}` },
       })
       expect(res.statusCode).toBe(200)
@@ -134,7 +134,7 @@ describe('activity logs API', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/v1/users/${userId}/activity-logs`,
+        url: `/api/v1/users/${userId}/audit-logs`,
         headers: { authorization: `Bearer ${adminToken}` },
       })
       expect(res.statusCode).toBe(200)
@@ -158,7 +158,7 @@ describe('activity logs API', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/v1/activity-logs',
+        url: '/api/v1/audit-logs',
         headers: { authorization: `Bearer ${adminToken}` },
       })
       const actions = res.json().data.map((l: { action: string }) => l.action)
@@ -187,7 +187,7 @@ describe('activity logs API', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/v1/activity-logs',
+        url: '/api/v1/audit-logs',
         headers: { authorization: `Bearer ${adminToken}` },
       })
       const log = res.json().data.find((l: { action: string }) => l.action === 'product.deleted')
@@ -201,7 +201,7 @@ describe('activity logs API', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/v1/activity-logs',
+        url: '/api/v1/audit-logs',
         headers: { authorization: `Bearer ${adminToken}` },
       })
       const log = res.json().data.find((l: { action: string }) => l.action === 'auth.logged_in')
@@ -228,7 +228,7 @@ describe('activity logs API', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/v1/activity-logs',
+        url: '/api/v1/audit-logs',
         headers: { authorization: `Bearer ${adminToken}` },
       })
       const actions = res.json().data.map((l: { action: string }) => l.action)

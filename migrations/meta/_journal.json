@@ -43,6 +43,13 @@
       "when": 1782221158369,
       "tag": "0005_hard_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782350400000,
+      "tag": "0006_rename_activity_logs_to_audit_logs",
+      "breakpoints": true
     }
   ]
 }

@@ -10,7 +10,7 @@ export async function createTestApp() {
 }
 
 export async function resetDb(app: Awaited<ReturnType<typeof createTestApp>>) {
-  await app.db.execute(sql`truncate table products, users, activity_logs restart identity cascade`)
+  await app.db.execute(sql`truncate table products, users, audit_logs restart identity cascade`)
 }
 
 export async function registerAndLogin(

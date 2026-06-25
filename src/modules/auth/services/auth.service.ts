@@ -5,7 +5,7 @@ import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
 import { ConflictError, UnauthorizedError } from '@/common/errors/AppError.js'
 import { profiles, users } from '@/db/schema/index.js'
-import { logActivity } from '@/modules/activity-logs/helpers/log-activity.js'
+import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
 
 export async function registerUser(db: Db, body: RegisterBody) {
   // An email may have at most one active row but several soft-deleted rows
@@ -21,7 +21,7 @@ export async function registerUser(db: Db, body: RegisterBody) {
   const dead = await db.query.users.findFirst({ where: and(eq(users.email, body.email), isNotNull(users.deletedAt)) })
   if (dead && await bcrypt.compare(body.password, dead.passwordHash)) {
     await db.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, dead.id))
-    logActivity(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id, metadata: { email: dead.email } })
+    logAudit(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id, metadata: { email: dead.email } })
     return { id: dead.id, email: dead.email }
   }
 
@@ -38,7 +38,7 @@ export async function registerUser(db: Db, body: RegisterBody) {
 
       return row
     })
-    logActivity(db, { userId: user.id, action: 'auth.registered', resourceType: 'user', resourceId: user.id, metadata: { email: user.email } })
+    logAudit(db, { userId: user.id, action: 'auth.registered', resourceType: 'user', resourceId: user.id, metadata: { email: user.email } })
     return user
   }
   catch (err) {
