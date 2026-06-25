@@ -1,6 +1,6 @@
 import type { FastifyReply } from 'fastify'
 import { MOBILE_ORIGINS } from '@/common/constants/index.js'
-import { ForbiddenError } from '@/common/errors/ForbiddenError.js'
+import { ForbiddenError } from '@/common/errors/AppError.js'
 import { authSchema } from '@/contract/schemas/auth.js'
 import { logActivity } from '@/modules/activity-logs/helpers/log-activity.js'
 import * as authService from '@/modules/auth/services/auth.service.js'

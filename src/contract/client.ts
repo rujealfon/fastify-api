@@ -28,7 +28,6 @@ type MaybeBody<T> = T extends { body: z.ZodType }
 
 type ClientInput<T> = MaybeQuery<T> & MaybeParams<T> & MaybeBody<T> & { headers?: Record<string, string> }
 
-// Parameter is optional when every field except `headers` is optional
 type ClientCaller<T extends { responses: Record<number, z.ZodType> }>
   = Record<never, never> extends Omit<ClientInput<T>, 'headers'>
     ? (input?: ClientInput<T>) => Promise<SuccessBody<T>>

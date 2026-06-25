@@ -3,8 +3,7 @@ import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/ind
 import bcrypt from 'bcryptjs'
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
-import { ConflictError } from '@/common/errors/ConflictError.js'
-import { NotFoundError } from '@/common/errors/NotFoundError.js'
+import { ConflictError, NotFoundError } from '@/common/errors/AppError.js'
 import { profiles, users } from '@/db/schema/index.js'
 
 const userColumns = {

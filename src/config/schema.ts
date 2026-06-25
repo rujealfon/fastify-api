@@ -1,3 +1,9 @@
+declare module 'fastify' {
+  interface FastifyInstance {
+    config: AppConfig
+  }
+}
+
 export interface AppConfig {
   PORT: number
   HOST: string

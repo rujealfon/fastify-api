@@ -6,7 +6,7 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import authDecorator from './common/decorators/auth.js'
 import { AppError } from './common/errors/AppError.js'
 import requestIdHook from './common/hooks/request-id.js'
-import { configSchema } from './config/index.js'
+import { configSchema } from './config/schema.js'
 import activityLogsRoutes from './modules/activity-logs/routes/index.js'
 import authRoutes from './modules/auth/routes/index.js'
 import healthRoutes from './modules/health/routes/index.js'

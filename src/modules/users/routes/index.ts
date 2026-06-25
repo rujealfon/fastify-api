@@ -1,5 +1,5 @@
 import { ROLES } from '@/common/constants/index.js'
-import { ForbiddenError } from '@/common/errors/ForbiddenError.js'
+import { ForbiddenError } from '@/common/errors/AppError.js'
 import { usersSchema } from '@/contract/schemas/users.js'
 import { logActivity } from '@/modules/activity-logs/helpers/log-activity.js'
 import * as userService from '@/modules/users/services/user.service.js'

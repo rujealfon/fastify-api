@@ -1,5 +1,5 @@
 import { ROLES } from '@/common/constants/index.js'
-import { ForbiddenError } from '@/common/errors/ForbiddenError.js'
+import { ForbiddenError } from '@/common/errors/AppError.js'
 import { activityLogsSchema } from '@/contract/schemas/activity-logs.js'
 import { findActivityLogs } from '@/modules/activity-logs/services/activity-log.service.js'
 import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
