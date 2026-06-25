@@ -46,11 +46,11 @@ docker-compose ps
 Tables don't exist yet. Apply the migrations once:
 
 ```bash
-pnpm db:generate
+nub run db:migrate
 ```
 
 ```bash
-pnpm db:migrate
+nub run db:seed
 ```
 
 Expected output:
@@ -121,11 +121,46 @@ After editing a file in `src/db/schema/`, generate a new migration then apply it
 
 ```bash
 # 1. Generate migration SQL (runs on host, reads your local schema files)
-pnpm db:generate
+nub run db:generate
 
 # 2. Apply it to the running Docker database
-pnpm db:migrate
+nub run db:migrate
 ```
+
+---
+
+## Resetting the database
+
+### Full reset (wipe everything and start fresh)
+
+Tears down all containers and volumes, then rebuilds from scratch:
+
+```bash
+# 1. Stop and delete all containers + volumes (all data is destroyed)
+docker-compose down -v
+
+# 2. Start services again
+docker-compose up -d
+
+# 3. Apply migrations
+nub run db:migrate
+
+# 4. Seed initial roles and permissions
+nub run db:seed
+```
+
+### Data-only reset (drop and recreate database)
+
+Drops and recreates the database, then re-runs migrations and seed:
+
+```bash
+docker exec -it fastify_postgres psql -U postgres -c "DROP DATABASE IF EXISTS fastify_dev WITH (FORCE);"
+docker exec -it fastify_postgres psql -U postgres -c "CREATE DATABASE fastify_dev;"
+nub run db:migrate
+nub run db:seed
+```
+
+> **Note:** After either reset, any existing JWT tokens are invalid (users no longer exist). Users must register and log in again.
 
 ---
 
