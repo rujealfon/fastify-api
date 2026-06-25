@@ -1,4 +1,4 @@
-export * from './activity-logs.js'
+export * from './audit-logs.js'
 export * from './products.js'
 export * from './profiles.js'
 export * from './relations.js'

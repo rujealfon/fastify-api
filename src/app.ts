@@ -7,7 +7,7 @@ import authDecorator from './common/decorators/auth.js'
 import { AppError } from './common/errors/AppError.js'
 import requestIdHook from './common/hooks/request-id.js'
 import { configSchema } from './config/schema.js'
-import activityLogsRoutes from './modules/activity-logs/routes/index.js'
+import auditLogsRoutes from './modules/audit-logs/routes/index.js'
 import authRoutes from './modules/auth/routes/index.js'
 import healthRoutes from './modules/health/routes/index.js'
 import productsRoutes from './modules/products/routes/index.js'
@@ -122,7 +122,7 @@ export async function buildApp() {
   await fastify.register(profileRoutes)
   await fastify.register(usersRoutes)
   await fastify.register(productsRoutes)
-  await fastify.register(activityLogsRoutes)
+  await fastify.register(auditLogsRoutes)
 
   return fastify
 }

@@ -1,13 +1,13 @@
 import { ROLES } from '@/common/constants/index.js'
 import { ForbiddenError } from '@/common/errors/AppError.js'
-import { activityLogsSchema } from '@/contract/schemas/activity-logs.js'
-import { findActivityLogs } from '@/modules/activity-logs/services/activity-log.service.js'
+import { auditLogsSchema } from '@/contract/schemas/audit-logs.js'
+import { findAuditLogs } from '@/modules/audit-logs/services/audit-log.service.js'
 import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
-export default createFastifyRpcPlugin(activityLogsSchema, {
+export default createFastifyRpcPlugin(auditLogsSchema, {
   list: async ({ query, request }) => {
     const { page, limit } = query
-    const { data, total } = await findActivityLogs(request.server.db, page, limit)
+    const { data, total } = await findAuditLogs(request.server.db, page, limit)
     return { status: 200 as const, body: { success: true as const, data, pagination: { page, limit, total } } }
   },
 
@@ -15,10 +15,10 @@ export default createFastifyRpcPlugin(activityLogsSchema, {
     const role = request.requestContext.get('role')
     const actorId = request.requestContext.get('userId')
     if (role !== ROLES.ADMIN && actorId !== params.id)
-      throw new ForbiddenError('You can only view your own activity log')
+      throw new ForbiddenError('You can only view your own audit log')
 
     const { page, limit } = query
-    const { data, total } = await findActivityLogs(request.server.db, page, limit, params.id)
+    const { data, total } = await findAuditLogs(request.server.db, page, limit, params.id)
     return { status: 200 as const, body: { success: true as const, data, pagination: { page, limit, total } } }
   },
 })

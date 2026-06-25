@@ -1,7 +1,7 @@
 import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { uuidv7 } from 'uuidv7'
 
-export const activityLogs = pgTable('activity_logs', {
+export const auditLogs = pgTable('audit_logs', {
   id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
   userId: uuid('user_id'),
   action: text('action').notNull(),
@@ -11,5 +11,5 @@ export const activityLogs = pgTable('activity_logs', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
-export type ActivityLogRow = typeof activityLogs.$inferSelect
-export type NewActivityLogRow = typeof activityLogs.$inferInsert
+export type AuditLogRow = typeof auditLogs.$inferSelect
+export type NewAuditLogRow = typeof auditLogs.$inferInsert
