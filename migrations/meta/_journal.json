@@ -47,8 +47,13 @@
     {
       "idx": 6,
       "version": "7",
+<<<<<<< feature/roles-permission-v1
       "when": 1782308547403,
       "tag": "0006_stale_jazinda",
+=======
+      "when": 1782350400000,
+      "tag": "0006_rename_activity_logs_to_audit_logs",
+>>>>>>> main
       "breakpoints": true
     }
   ]

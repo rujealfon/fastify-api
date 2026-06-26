@@ -1,20 +1,21 @@
 # src/common/errors/
 
-Typed HTTP error classes. All extend `AppError` and are caught by the global `setErrorHandler` in `app.ts`.
+Typed HTTP error classes. All defined in `AppError.ts` and caught by the global `setErrorHandler` in `app.ts`.
 
 ## Hierarchy
 
 ```
-AppError (base)
+AppError (base)           AppError.ts
 ├── NotFoundError       → 404 NOT_FOUND
 ├── UnauthorizedError   → 401 UNAUTHORIZED
+├── ForbiddenError      → 403 FORBIDDEN
 ├── ConflictError       → 409 CONFLICT
 └── ValidationError     → 422 VALIDATION_ERROR
 ```
 
 ## AppError shape
 
-All `AppError` subclasses serialise to the standard error envelope:
+All subclasses serialise to the standard error envelope:
 
 ```ts
 {
@@ -28,22 +29,20 @@ All `AppError` subclasses serialise to the standard error envelope:
 
 HTTP status is set via the response status code; it is not repeated in the body.
 
-## Usage in services / controllers
+## Usage
 
 ```ts
-import { NotFoundError } from '@/common/errors/NotFoundError.js'
+import { NotFoundError } from '@/common/errors/AppError.js'
 
 if (!user)
-  throw new NotFoundError('User not found')
+  throw new NotFoundError('User', id)
 ```
-
-The error handler in `app.ts` serialises any `AppError` instance to JSON and sets the correct HTTP status code automatically.
 
 ## Adding a new error type
 
-```ts
-import { AppError } from './AppError.js'
+Add the subclass directly in `AppError.ts`:
 
+```ts
 export class ForbiddenError extends AppError {
   constructor(message = 'Forbidden') {
     super(403, 'FORBIDDEN', message)

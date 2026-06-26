@@ -1,7 +1,9 @@
 import type { z } from 'zod'
 import type { RouteMap } from './types.js'
+import { auditLogsSchema } from './schemas/audit-logs.js'
 import { authSchema } from './schemas/auth.js'
 import { productsSchema } from './schemas/products.js'
+import { profileSchema } from './schemas/profile.js'
 import { usersSchema } from './schemas/users.js'
 
 // ---- Type helpers ----
@@ -28,7 +30,6 @@ type MaybeBody<T> = T extends { body: z.ZodType }
 
 type ClientInput<T> = MaybeQuery<T> & MaybeParams<T> & MaybeBody<T> & { headers?: Record<string, string> }
 
-// Parameter is optional when every field except `headers` is optional
 type ClientCaller<T extends { responses: Record<number, z.ZodType> }>
   = Record<never, never> extends Omit<ClientInput<T>, 'headers'>
     ? (input?: ClientInput<T>) => Promise<SuccessBody<T>>
@@ -117,8 +118,10 @@ export function createApiClient(
   options?: { getToken?: () => string },
 ) {
   return {
+    auditLogs: buildNsClient(auditLogsSchema, baseUrl, options?.getToken),
     auth: buildNsClient(authSchema, baseUrl, options?.getToken),
     products: buildNsClient(productsSchema, baseUrl, options?.getToken),
+    profile: buildNsClient(profileSchema, baseUrl, options?.getToken),
     users: buildNsClient(usersSchema, baseUrl, options?.getToken),
   }
 }

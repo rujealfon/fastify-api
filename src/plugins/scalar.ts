@@ -24,6 +24,7 @@ const scalarPlugin: FastifyPluginAsync = async (fastify) => {
         },
       ],
       tags: [
+<<<<<<< feature/roles-permission-v1
         { name: 'Activity Logs', description: 'Activity log endpoints' },
         { name: 'Auth', description: 'Authentication endpoints' },
         { name: 'Health', description: 'Health check endpoints' },
@@ -31,6 +32,13 @@ const scalarPlugin: FastifyPluginAsync = async (fastify) => {
         { name: 'Products', description: 'Product management endpoints' },
         { name: 'Profile', description: 'Authenticated user self-management endpoints' },
         { name: 'Roles', description: 'Role management endpoints' },
+=======
+        { name: 'Audit Logs', description: 'Audit log management endpoints' },
+        { name: 'Auth', description: 'Authentication endpoints' },
+        { name: 'Health', description: 'Health check endpoints' },
+        { name: 'Products', description: 'Product management endpoints' },
+        { name: 'Profile', description: 'Authenticated user self-management endpoints' },
+>>>>>>> main
         { name: 'Users', description: 'User management endpoints' },
       ],
       components: {
