@@ -33,4 +33,20 @@ ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_users_id_fk" FOREIGN
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "permissions_resource_action_scope_unique" ON "permissions" USING btree ("resource","action","scope");--> statement-breakpoint
 CREATE UNIQUE INDEX "roles_name_unique" ON "roles" USING btree ("name");--> statement-breakpoint
+--> statement-breakpoint
+-- Seed built-in roles if they don't exist yet (idempotent — safe to re-run after manual seed)
+INSERT INTO "roles" ("id", "name", "description", "is_system_role")
+VALUES
+  (gen_random_uuid(), 'super-admin', 'Full system access', true),
+  (gen_random_uuid(), 'admin', 'Administrative access', false),
+  (gen_random_uuid(), 'user', 'Standard user access', false)
+ON CONFLICT ("name") DO NOTHING;
+--> statement-breakpoint
+-- Backfill user_roles from users.role before the column is dropped
+INSERT INTO "user_roles" ("user_id", "role_id")
+SELECT u."id", r."id"
+FROM "users" u
+JOIN "roles" r ON r."name" = u."role"
+ON CONFLICT DO NOTHING;
+--> statement-breakpoint
 ALTER TABLE "users" DROP COLUMN "role";
