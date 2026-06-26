@@ -14,8 +14,6 @@ A production-ready REST API built with **Fastify 5**, **TypeScript**, **PostgreS
 | Auth | JWT via [@fastify/jwt](https://github.com/fastify/fastify-jwt) |
 | API Docs | [Scalar](https://scalar.com) + [@fastify/swagger](https://github.com/fastify/fastify-swagger) (OpenAPI 3.0) |
 | Metrics | [prom-client](https://github.com/siimon/prom-client) — Prometheus endpoint at `/metrics` |
-| Tracing | [OpenTelemetry](https://opentelemetry.io/) (OTLP HTTP, optional via `OTEL_ENDPOINT`) |
-| RPC | Contract-first RPC — shared schemas, `createFastifyRpcPlugin`, type-safe `createApiClient` |
 | Testing | [Vitest](https://vitest.dev) |
 | Package Manager | [nub](https://nub.sh) (pnpm under the hood) |
 
@@ -24,34 +22,19 @@ A production-ready REST API built with **Fastify 5**, **TypeScript**, **PostgreS
 ```
 src/
 ├── app.ts                        # Fastify application factory (plugin registration order)
-├── server.ts                     # Entry point — init telemetry + graceful shutdown
-├── telemetry.ts                  # OpenTelemetry SDK setup
+├── server.ts                     # Entry point + graceful shutdown
 ├── config/                       # Environment config schema + type augmentation
 ├── db/
 │   ├── index.ts                  # Drizzle client + connection pool
 │   ├── seed.ts                   # Seed file — roles, permissions, role_permissions
 │   └── schema/                   # Table definitions (users, roles, permissions, …)
-├── plugins/                      # One file per Fastify plugin
-│   ├── sensible.ts               # @fastify/sensible — httpErrors, reply helpers
-│   ├── compress.ts               # @fastify/compress — brotli/gzip/deflate responses
-│   ├── helmet.ts                 # @fastify/helmet — security headers
-│   ├── cors.ts                   # @fastify/cors
-│   ├── cookie.ts                 # @fastify/cookie — signed cookie support
-│   ├── redis.ts                  # @fastify/redis — shared ioredis connection
+├── plugins/
 │   ├── rate-limit.ts             # @fastify/rate-limit (Redis-backed, multi-instance safe)
 │   ├── under-pressure.ts         # @fastify/under-pressure — auto-503 under load
-│   ├── multipart.ts              # @fastify/multipart — file upload support
 │   ├── request-context.ts        # @fastify/request-context — AsyncLocalStorage per request
-│   ├── jwt.ts                    # @fastify/jwt
 │   ├── db.ts                     # Decorates fastify.db
 │   ├── metrics.ts                # prom-client — /metrics endpoint
-│   ├── scalar.ts                 # @fastify/swagger + Scalar UI
-│   └── rpc.ts                    # createFastifyRpcPlugin — registers RouteMap as Fastify routes
-├── contract/                     # RPC contract layer (shared between server and client)
-│   ├── types.ts                  # RouteSchema<> (generic typed) + RouteMap (plain record)
-│   ├── client.ts                 # createApiClient — type-safe fetch client + RpcError
-│   ├── index.ts
-│   └── schemas/                  # Per-domain route schemas (auth, users, roles, permissions, …)
+│   └── scalar.ts                 # @fastify/swagger + Scalar UI
 ├── common/                       # Cross-cutting concerns shared across all modules
 │   ├── constants/                # Shared constants & enums (Postgres error codes)
 │   ├── decorators/               # fastify.authenticate, fastify.requireAdmin, fastify.requirePermission
@@ -95,7 +78,6 @@ cp .env.example .env
 | `NODE_ENV` | | `development` | `development` \| `production` \| `test` |
 | `LOG_LEVEL` | | `info` | Pino log level |
 | `COOKIE_SECRET` | | *(JWT_SECRET)* | Secret for signed cookies — falls back to `JWT_SECRET` if empty |
-| `OTEL_ENDPOINT` | | *(disabled)* | OTLP HTTP endpoint (e.g. `http://localhost:4318/v1/traces`). Leave empty to disable tracing. |
 
 ## API Documentation
 
@@ -246,7 +228,7 @@ Three roles are created by `nub db:seed` (idempotent):
 
 1. Every authenticated request verifies the JWT then loads the user's roles and permissions from the DB via a single JOIN query.
 2. `permissions: string[]` and `isSuperAdmin: boolean` are stored in the per-request context.
-3. Route handlers call `fastify.requirePermission('resource:action:scope')` (set in the contract schema) as a preValidation hook. Super-admins bypass this check.
+3. Routes call `fastify.requirePermission('resource:action:scope')` as a preValidation hook. Super-admins bypass this check.
 4. Own-resource checks (e.g. updating your own account) are enforced inside the route handler using the stored `userId` from context.
 
 ### Why permissions are static
@@ -316,44 +298,8 @@ curl -X POST http://localhost:3000/api/v1/auth/logout -b jar.txt -c jar.txt
 curl http://localhost:3000/metrics
 ```
 
-## RPC Layer
-
-Routes are defined once in `src/contract/schemas/` as a `RouteMap` — a plain object mapping route names to their method, path, Zod schemas, and auth/permission flag. This contract is shared between the server and any client.
-
-**Server** — `createFastifyRpcPlugin(schema, handlers)` registers all routes on a Fastify instance. Handlers receive fully-typed `{ query, params, body, request, reply }` and must return a typed `{ status, body }` union. Each route schema accepts an optional `permission` string (e.g. `'user:read:any'`) which is wired as a preValidation hook automatically.
-
-**Client** — `createApiClient(baseUrl, { getToken })` returns a namespaced client (`client.users.list(...)`, `client.roles.create(...)`) backed by native `fetch`. All inputs and return types are inferred from the same contract schemas.
-
-```ts
-// Contract (src/contract/schemas/roles.ts)
-export const rolesSchema = {
-  list: {
-    method: 'GET',
-    path: '/api/v1/roles',
-    permission: 'role:read:any',
-    responses: { 200: apiListSchema(roleSchema), ... },
-  },
-  // ...
-} satisfies RouteMap
-
-// Server
-const plugin = createFastifyRpcPlugin(rolesSchema, {
-  list: async ({ request }) => ({
-    status: 200,
-    body: { success: true, data: await roleService.findAllRoles(request.server.db), ... },
-  }),
-})
-
-// Client
-const api = createApiClient('http://localhost:3000', { getToken: () => token })
-const roles = await api.roles.list({})
-```
-
-Errors from the server surface as `RpcError` (with `.status` and `.data`) on the client.
-
 ## Architecture Notes
 
-- **Contract-first RPC** — `src/contract/` is the single source of truth for route shapes. `createFastifyRpcPlugin` wires the server; `createApiClient` wires the client. A schema change is a type error on both sides simultaneously.
 - **Plugin registration order** in `app.ts` is intentional: `env` must be first, `redis` must precede `rate-limit`, `request-context` must precede `auth-decorator` (context must exist before being written to).
 - **Dynamic RBAC** — permissions are loaded from the DB on every request, not embedded in the JWT. Role changes take effect immediately without re-login. Redis caching is a future upgrade path.
 - **Zod is the single source of truth** for types — no manual interfaces. All types are derived via `z.infer<>` from schemas in each module's `schemas/index.ts`.
@@ -362,4 +308,4 @@ Errors from the server surface as `RpcError` (with `.status` and `.data`) on the
 - **Rate limiting** uses Redis as the store — safe for multi-instance / horizontally scaled deployments.
 - **Request context** (`@fastify/request-context`) stores `requestId`, `userId`, `permissions`, and `isSuperAdmin` via AsyncLocalStorage, accessible anywhere in the call stack without passing them explicitly.
 - **Audit logging** is fire-and-forget (`logAudit` in `src/modules/audit-logs/helpers/`) — inserts never block the request path. Failures are silently swallowed so a logging error never surfaces to the caller.
-- **Graceful shutdown** is handled in `server.ts` — `SIGINT`/`SIGTERM` closes Fastify (draining connections) and flushes OpenTelemetry spans before exiting.
+- **Graceful shutdown** is handled in `server.ts` — `SIGINT`/`SIGTERM` closes Fastify before exiting.

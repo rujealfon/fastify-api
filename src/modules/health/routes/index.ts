@@ -1,7 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { apiErrorSchema, apiSuccessSchema } from '@/common/schemas/index.js'
-import * as controller from '@/modules/health/controllers/health.controller.js'
+import { checkDb, checkRedis } from '@/modules/health/services/health.service.js'
 
 const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get('/live', {
@@ -12,7 +12,7 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
         200: apiSuccessSchema(z.object({ status: z.string() })),
       },
     },
-    handler: controller.liveness,
+    handler: async () => ({ success: true as const, data: { status: 'ok' } }),
   })
 
   fastify.get('/ready', {
@@ -24,7 +24,24 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
         503: apiErrorSchema,
       },
     },
-    handler: controller.readiness,
+    handler: async (request, reply) => {
+      const [dbOk, redisOk] = await Promise.all([
+        checkDb(request.server.db),
+        checkRedis(request.server.redis),
+      ])
+
+      if (!dbOk || !redisOk) {
+        return reply.status(503).send({
+          success: false,
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: !dbOk ? 'database unreachable' : 'redis unreachable',
+          },
+        })
+      }
+
+      return { success: true as const, data: { status: 'ready' } }
+    },
   })
 
   fastify.get('/details', {
@@ -44,7 +61,23 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
         })),
       },
     },
-    handler: controller.details,
+    handler: async (request) => {
+      const memory = request.server.memoryUsage()
+      const underPressure = request.server.isUnderPressure()
+      return {
+        success: true as const,
+        data: {
+          status: underPressure ? 'degraded' : 'ok',
+          memory: {
+            heapUsed: memory.heapUsed,
+            rssBytes: memory.rssBytes,
+            eventLoopDelay: memory.eventLoopDelay,
+            eventLoopUtilized: memory.eventLoopUtilized,
+          },
+          underPressure,
+        },
+      }
+    },
   })
 }
 

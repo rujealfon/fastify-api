@@ -52,7 +52,6 @@ services:
       JWT_SECRET: change_this_to_a_random_string_at_least_32_characters
       REDIS_URL: redis://redis:6379
       COOKIE_SECRET: ''
-      OTEL_ENDPOINT: ''
       LOG_LEVEL: info
       MOBILE_API_KEY: change_this_to_a_random_string_at_least_32_characters
     ports:
@@ -105,8 +104,10 @@ services:
 
   cleanup:
     build:
-      context: ./docker/cleanup
+      context: .
+      target: deps
     container_name: fastify_cleanup
+    command: ['sh', '-c', 'while true; do nubx tsx src/db/cleanup.ts; sleep 86400; done']
     depends_on:
       postgres:
         condition: service_healthy

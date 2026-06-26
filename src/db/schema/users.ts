@@ -1,9 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { uuidv7 } from 'uuidv7'
 
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
+  id: uuid('id').primaryKey().$defaultFn(() => randomUUID()),
   email: text('email').notNull(),
   passwordHash: text('password_hash').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -1,9 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import { date, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import { uuidv7 } from 'uuidv7'
 import { users } from './users.js'
 
 export const profiles = pgTable('profiles', {
-  id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
+  id: uuid('id').primaryKey().$defaultFn(() => randomUUID()),
   userId: uuid('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
   firstName: text('first_name'),
   lastName: text('last_name'),

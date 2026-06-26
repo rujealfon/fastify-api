@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This is a Fastify TypeScript API. Source code lives in `src/`, with startup in `server.ts` and app assembly in `app.ts`. Domain modules are under `src/modules/<domain>/` and usually contain `routes/`, `services/`, and `schemas/`. Shared errors, hooks, decorators, and schemas live in `src/common/`; plugins in `src/plugins/`; database schema in `src/db/schema/`; and portable RPC contracts in `src/contract/schemas/`. Tests live in `src/tests/`, with fixtures in `src/tests/fixtures/`.
+This is a Fastify TypeScript API. Source code lives in `src/`, with startup in `server.ts` and app assembly in `app.ts`. Domain modules are under `src/modules/<domain>/` and usually contain `routes/`, `services/`, and `schemas/`. Shared errors, hooks, decorators, and schemas live in `src/common/`; plugins in `src/plugins/`; and database schema in `src/db/schema/`. Tests live in `src/tests/`, with fixtures in `src/tests/fixtures/`.
 
 ## Build, Test, and Development Commands
 
@@ -17,7 +17,7 @@ Run project scripts with `nub`; Docker services are required for most tasks.
 
 ## Coding Style & Naming Conventions
 
-Use TypeScript ES modules and the `@/` alias for imports from `src/`. Follow the ESLint setup based on `@antfu/eslint-config`; run `nub lint` before submitting changes. Prefer Zod for validation and derive types with `z.infer<>` instead of hand-written interfaces. Keep services free of Fastify imports and inject `db` explicitly. Contract schema files in `src/contract/schemas/` must only import from `zod` and `@/contract/types.js`.
+Use TypeScript ES modules and the `@/` alias for imports from `src/`. Follow the ESLint setup based on `@antfu/eslint-config`; run `nub lint` before submitting changes. Prefer Zod for validation and derive types with `z.infer<>` instead of hand-written interfaces. Keep services free of Fastify imports and inject `db` explicitly.
 
 ## Testing Guidelines
 

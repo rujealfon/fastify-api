@@ -1,9 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import { pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { uuidv7 } from 'uuidv7'
 import { roles } from './roles.js'
 
 export const permissions = pgTable('permissions', {
-  id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
+  id: uuid('id').primaryKey().$defaultFn(() => randomUUID()),
   resource: text('resource').notNull(),
   action: text('action').notNull(),
   scope: text('scope').notNull(),

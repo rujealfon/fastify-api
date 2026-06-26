@@ -95,7 +95,7 @@ export async function createUser(db: Db, body: CreateUserBody) {
     await tx.insert(profiles).values({ userId: row.id })
 
     // Profile row was just inserted but not returned; pass null and let toUser
-    // fill in the empty shape so the response contract is always complete.
+    // fill in the empty shape so the response is always complete.
     return toUser({ ...row, profile: null })
   })
 }

@@ -1,6 +1,12 @@
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import process from 'node:process'
+import compress from '@fastify/compress'
+import cookie from '@fastify/cookie'
+import cors from '@fastify/cors'
 import envPlugin from '@fastify/env'
+import helmet from '@fastify/helmet'
+import fastifyJwt from '@fastify/jwt'
+import fastifyRedis from '@fastify/redis'
 import Fastify from 'fastify'
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
 import authDecorator from './common/decorators/auth.js'
@@ -15,19 +21,11 @@ import productsRoutes from './modules/products/routes/index.js'
 import profileRoutes from './modules/profile/routes/index.js'
 import rolesRoutes from './modules/roles/routes/index.js'
 import usersRoutes from './modules/users/routes/index.js'
-import compressPlugin from './plugins/compress.js'
-import cookiePlugin from './plugins/cookie.js'
-import corsPlugin from './plugins/cors.js'
 import dbPlugin from './plugins/db.js'
-import helmetPlugin from './plugins/helmet.js'
-import jwtPlugin from './plugins/jwt.js'
 import metricsPlugin from './plugins/metrics.js'
-import multipartPlugin from './plugins/multipart.js'
 import rateLimitPlugin from './plugins/rate-limit.js'
-import redisPlugin from './plugins/redis.js'
 import requestContextPlugin from './plugins/request-context.js'
 import scalarPlugin from './plugins/scalar.js'
-import sensiblePlugin from './plugins/sensible.js'
 import underPressurePlugin from './plugins/under-pressure.js'
 
 export async function buildApp() {
@@ -51,20 +49,38 @@ export async function buildApp() {
     dotenv: true,
   })
 
-  // Core utilities
-  await fastify.register(sensiblePlugin)
-
   // Security & transport
-  await fastify.register(helmetPlugin)
-  await fastify.register(compressPlugin)
-  await fastify.register(corsPlugin)
-  await fastify.register(cookiePlugin)
+  await fastify.register(helmet, {
+    contentSecurityPolicy: false,
+  })
+  await fastify.register(compress, {
+    global: true,
+    encodings: ['br', 'gzip', 'deflate'],
+    threshold: 1024,
+  })
+  await fastify.register(cors, {
+    origin: fastify.config.NODE_ENV === 'production' ? ['https://yourdomain.com'] : true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+  await fastify.register(cookie, {
+    secret: fastify.config.COOKIE_SECRET || fastify.config.JWT_SECRET,
+    hook: 'onRequest',
+    parseOptions: {
+      httpOnly: true,
+      secure: fastify.config.NODE_ENV === 'production',
+      sameSite: 'strict',
+    },
+  })
 
   // API docs
   await fastify.register(scalarPlugin)
 
   // Data layer
-  await fastify.register(redisPlugin)
+  await fastify.register(fastifyRedis, {
+    url: fastify.config.REDIS_URL,
+  })
   await fastify.register(rateLimitPlugin)
   await fastify.register(dbPlugin)
 
@@ -72,14 +88,17 @@ export async function buildApp() {
   await fastify.register(underPressurePlugin)
 
   // Request lifecycle
-  await fastify.register(multipartPlugin)
   await fastify.register(requestContextPlugin)
 
   // Observability
   await fastify.register(metricsPlugin)
 
   // Auth
-  await fastify.register(jwtPlugin)
+  await fastify.register(fastifyJwt, {
+    secret: fastify.config.JWT_SECRET,
+    sign: { expiresIn: '24h' },
+    cookie: { cookieName: 'token', signed: false },
+  })
   await fastify.register(authDecorator)
   await fastify.register(requestIdHook)
 

@@ -14,7 +14,6 @@ export interface AppConfig {
   LOG_LEVEL: string
   REDIS_URL: string
   COOKIE_SECRET: string
-  OTEL_ENDPOINT: string
   MOBILE_API_KEY: string
 }
 
@@ -35,7 +34,6 @@ export const configSchema = {
     LOG_LEVEL: { type: 'string', default: 'info' },
     REDIS_URL: { type: 'string' },
     COOKIE_SECRET: { type: 'string', default: '' },
-    OTEL_ENDPOINT: { type: 'string', default: '' },
     MOBILE_API_KEY: { type: 'string' },
   },
 } as const
