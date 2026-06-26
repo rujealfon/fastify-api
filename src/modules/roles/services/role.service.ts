@@ -48,6 +48,8 @@ export async function updateRole(db: Db, id: string, body: UpdateRoleBody, calle
   const existing = await findRoleById(db, id)
   if (existing.isSystemRole && !callerIsSuperAdmin)
     throw new ForbiddenError('System roles cannot be modified')
+  if (existing.isSystemRole && body.name !== undefined && body.name !== existing.name)
+    throw new ForbiddenError('System role names cannot be changed')
   try {
     const [row] = await db.update(roles).set(body).where(eq(roles.id, id)).returning()
     if (!row)

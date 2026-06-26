@@ -125,6 +125,7 @@ export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
 
 export async function deleteUser(db: Db, id: string, deletedBy?: string) {
   await findUserById(db, id)
+  await db.delete(userRoles).where(eq(userRoles.userId, id))
   await db.update(users).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(users.id, id))
 }
 
@@ -150,7 +151,7 @@ export async function removeRoleFromUser(db: Db, userId: string, roleId: string,
   if (role.isSystemRole && !callerIsSuperAdmin)
     throw new ForbiddenError('System roles can only be removed by a super-admin')
   if (role.name === ROLES.SUPER_ADMIN) {
-    const [{ total }] = await db.select({ total: count() }).from(userRoles).where(eq(userRoles.roleId, roleId))
+    const [{ total }] = await db.select({ total: count() }).from(userRoles).innerJoin(users, eq(users.id, userRoles.userId)).where(and(eq(userRoles.roleId, roleId), isNull(users.deletedAt)))
     if (total <= 1)
       throw new ForbiddenError('Cannot remove the last super-admin')
   }
