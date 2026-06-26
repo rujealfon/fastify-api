@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify'
+import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, extractTokenFromCookie, firstCookieHeader, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
+import { auditLogs } from '@/db/schema/index.js'
+import { createTestApp, eventually, extractTokenFromCookie, firstCookieHeader, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 describe('auth API', () => {
   let app: FastifyInstance
@@ -267,6 +269,33 @@ describe('auth API', () => {
       const cookie = firstCookieHeader(res.headers['set-cookie'])
       expect(cookie).toMatch(/^token=(?:;|$)/)
       expect(cookie).toContain('Max-Age=0')
+    })
+
+    it('records the logged-out user in the audit log', async () => {
+      const registerRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'logout-audit@example.com', password: 'password123' },
+      })
+      const { data: user } = registerRes.json<{ data: { id: string } }>()
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: 'logout-audit@example.com', password: 'password123' },
+      })
+      const token = extractTokenFromCookie(loginRes.headers['set-cookie'])
+
+      await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { cookie: `token=${token}` } })
+
+      const [log] = await eventually(
+        () => app.db
+          .select()
+          .from(auditLogs)
+          .where(and(eq(auditLogs.action, 'auth.logged_out'), eq(auditLogs.userId, user.id)))
+          .limit(1),
+        rows => rows.length > 0,
+      )
+      expect(log.resourceId).toBe(user.id)
     })
   })
 

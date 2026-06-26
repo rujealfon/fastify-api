@@ -1,4 +1,4 @@
-import type { FastifyReply } from 'fastify'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 import { ForbiddenError } from '@/common/errors/AppError.js'
 import { authSchema } from '@/contract/schemas/auth.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
@@ -7,6 +7,17 @@ import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
 function signToken(user: { id: string, email: string }, reply: FastifyReply) {
   return reply.jwtSign({ sub: user.id, email: user.email })
+}
+
+async function getLogoutUserId(request: FastifyRequest) {
+  try {
+    await request.jwtVerify()
+    const payload = request.user as { sub?: string }
+    return payload.sub ?? null
+  }
+  catch {
+    return null
+  }
 }
 
 export default createFastifyRpcPlugin(authSchema, {
@@ -38,7 +49,8 @@ export default createFastifyRpcPlugin(authSchema, {
   },
 
   logout: async ({ request, reply }) => {
-    logAudit(request.server.db, { userId: request.requestContext.get('userId') ?? null, action: 'auth.logged_out', resourceType: 'user', metadata: { ip: request.ip, ua: request.headers['user-agent'] ?? null } })
+    const userId = await getLogoutUserId(request)
+    logAudit(request.server.db, { userId, action: 'auth.logged_out', resourceType: 'user', resourceId: userId, metadata: { ip: request.ip, ua: request.headers['user-agent'] ?? null } })
     reply.clearCookie('token', { path: '/' })
     return { status: 200 as const, body: { success: true as const, data: null } }
   },

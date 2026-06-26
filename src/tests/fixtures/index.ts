@@ -69,3 +69,15 @@ export function extractTokenFromCookie(setCookie: string | string[] | undefined)
     throw new Error('token cookie not found in Set-Cookie header')
   return token
 }
+
+export const delay = () => new Promise<void>(r => setTimeout(r, 50))
+
+export async function eventually<T>(read: () => Promise<T>, done: (value: T) => boolean): Promise<T> {
+  for (let i = 0; i < 10; i++) {
+    const value = await read()
+    if (done(value))
+      return value
+    await delay()
+  }
+  return read()
+}
