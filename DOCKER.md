@@ -8,8 +8,8 @@ This guide walks through the full local development setup using Docker. All serv
 
 | Service | Container | Port | Description |
 |---|---|---|---|
-| `postgres` | `fastify_postgres` | `5432` | PostgreSQL 16 database |
-| `app` | `fastify_app` | `3000` | Fastify API with hot reload (`tsx watch`) |
+| `postgres` | `fastify_postgres` | `5432` | PostgreSQL 18 database |
+| `app` | `fastify_app` | `3000` | Fastify API with hot reload (`nub watch src/server.ts`) |
 | `drizzle-studio` | `fastify_drizzle_studio` | `4983 (backend)` | Drizzle Studio — schema & data browser |
 | `pgadmin` | `fastify_pgadmin` | `5050` | pgAdmin 4 — Postgres GUI |
 
@@ -84,7 +84,7 @@ http://localhost:3000/
 
 ## You're ready to develop
 
-Any change you make to a file inside `src/` is picked up automatically — `tsx watch` restarts the server inside the container.
+Any change you make to a file inside `src/` is picked up automatically — `nub watch src/server.ts` restarts the server inside the container.
 
 ---
 

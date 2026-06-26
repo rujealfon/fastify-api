@@ -90,6 +90,8 @@ cp .env.example .env
 | `DATABASE_URL` | ✅ | — | PostgreSQL connection string |
 | `JWT_SECRET` | ✅ | — | Secret for signing JWTs (min 32 chars) |
 | `REDIS_URL` | ✅ | — | Redis connection string (e.g. `redis://localhost:6379`) |
+| `MOBILE_API_KEY` | ✅ | — | Shared secret for mobile clients using `x-mobile-api-key` |
+| `TEST_DATABASE_URL` | | *(empty)* | PostgreSQL connection string used by test runs |
 | `PORT` | | `3000` | Server port |
 | `HOST` | | `0.0.0.0` | Server host |
 | `NODE_ENV` | | `development` | `development` \| `production` \| `test` |
@@ -123,7 +125,7 @@ All scripts run via `nub` (or `nubx` inside containers). See [package.json](pack
 |---|---|---|---|
 | POST | `/api/v1/auth/register` | — | Register — creates account and assigns the `user` role |
 | POST | `/api/v1/auth/login` | — | Login — sets a `token` httpOnly cookie (web) |
-| POST | `/api/v1/auth/mobile/login` | — | Login for mobile — returns `token` in body, no cookie |
+| POST | `/api/v1/auth/mobile/login` | `x-mobile-api-key` | Login for mobile — returns `token` in body, no cookie |
 | POST | `/api/v1/auth/logout` | — | Logout — clears the `token` cookie |
 
 ### Users
@@ -202,7 +204,7 @@ Two login endpoints cover the two client types:
 | Client | Endpoint | Strategy |
 |---|---|---|
 | Web browser | `POST /api/v1/auth/login` | Sets an httpOnly cookie (`SameSite=Strict`, `Secure` in production) — sent automatically on every request |
-| Mobile app (Ionic/Capacitor, React Native) | `POST /api/v1/auth/mobile/login` | Returns `data.token` in the response body, no cookie — store in secure storage and send as `Authorization: Bearer <token>` |
+| Mobile app (Ionic/Capacitor, React Native) | `POST /api/v1/auth/mobile/login` | Requires `x-mobile-api-key`, returns `data.token` in the response body, no cookie — store in secure storage and send as `Authorization: Bearer <token>` |
 | Server-to-server / tests | Either | Bearer token is simpler |
 
 ```
