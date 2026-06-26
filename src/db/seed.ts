@@ -25,6 +25,7 @@ const SEED_PERMISSIONS = [
   { resource: 'permission', action: 'read', scope: 'any' },
   { resource: 'permission', action: 'update', scope: 'any' },
   { resource: 'permission', action: 'delete', scope: 'any' },
+  { resource: 'audit-log', action: 'read', scope: 'any' },
 ]
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -38,6 +39,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'user:update:own',
     'role:read:any',
     'permission:read:any',
+    'audit-log:read:any',
   ],
   'user': ['user:read:own', 'user:update:own'],
 }

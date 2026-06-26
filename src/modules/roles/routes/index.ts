@@ -19,7 +19,8 @@ export default createFastifyRpcPlugin(rolesSchema, {
   },
 
   update: async ({ params, body, request }) => {
-    const data = await roleService.updateRole(request.server.db, params.id, body)
+    const isSuperAdmin = request.requestContext.get('isSuperAdmin') ?? false
+    const data = await roleService.updateRole(request.server.db, params.id, body, isSuperAdmin)
     return { status: 200 as const, body: { success: true as const, data } }
   },
 
@@ -29,12 +30,14 @@ export default createFastifyRpcPlugin(rolesSchema, {
   },
 
   assignPermission: async ({ params, request }) => {
-    await roleService.assignPermissionToRole(request.server.db, params.id, params.permId)
+    const isSuperAdmin = request.requestContext.get('isSuperAdmin') ?? false
+    await roleService.assignPermissionToRole(request.server.db, params.id, params.permId, isSuperAdmin)
     return { status: 200 as const, body: { success: true as const, data: null } }
   },
 
   removePermission: async ({ params, request }) => {
-    await roleService.removePermissionFromRole(request.server.db, params.id, params.permId)
+    const isSuperAdmin = request.requestContext.get('isSuperAdmin') ?? false
+    await roleService.removePermissionFromRole(request.server.db, params.id, params.permId, isSuperAdmin)
     return { status: 200 as const, body: { success: true as const, data: null } }
   },
 })

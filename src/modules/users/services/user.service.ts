@@ -140,7 +140,12 @@ export async function assignRoleToUser(db: Db, userId: string, roleId: string, c
   await db.insert(userRoles).values({ userId, roleId }).onConflictDoNothing()
 }
 
-export async function removeRoleFromUser(db: Db, userId: string, roleId: string) {
-  await findUserById(db, userId)
+export async function removeRoleFromUser(db: Db, userId: string, roleId: string, callerIsSuperAdmin = false) {
+  const [, role] = await Promise.all([
+    findUserById(db, userId),
+    db.query.roles.findFirst({ where: eq(roles.id, roleId) }),
+  ])
+  if (role?.isSystemRole && !callerIsSuperAdmin)
+    throw new ForbiddenError('System roles can only be removed by a super-admin')
   await db.delete(userRoles).where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
 }

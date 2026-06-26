@@ -7,7 +7,7 @@ export const auditLogsSchema = {
     method: 'GET' as const,
     path: '/api/v1/audit-logs',
     tags: ['Audit Logs'],
-    admin: true,
+    permission: 'audit-log:read:any',
     query: paginationQuerySchema,
     responses: {
       200: apiListSchema(auditLogSchema),

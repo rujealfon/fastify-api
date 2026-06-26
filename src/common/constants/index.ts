@@ -5,6 +5,7 @@ export const PG_UNIQUE_VIOLATION = '23505'
 export const ROLES = {
   USER: 'user',
   ADMIN: 'admin',
+  SUPER_ADMIN: 'super-admin',
 } as const
 
 /** Allowed origins for the mobile login endpoint. */

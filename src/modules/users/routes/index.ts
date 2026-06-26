@@ -55,7 +55,8 @@ export default createFastifyRpcPlugin(usersSchema, {
   },
 
   removeRole: async ({ params, request }) => {
-    await userService.removeRoleFromUser(request.server.db, params.id, params.roleId)
+    const isSuperAdmin = request.requestContext.get('isSuperAdmin') ?? false
+    await userService.removeRoleFromUser(request.server.db, params.id, params.roleId, isSuperAdmin)
     return { status: 200 as const, body: { success: true as const, data: null } }
   },
 })

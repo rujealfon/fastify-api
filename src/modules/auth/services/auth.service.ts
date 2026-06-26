@@ -19,10 +19,13 @@ export async function registerUser(db: Db, body: RegisterBody) {
   // window before the cleanup cron hard-deletes it). Profile row still exists, so
   // we only clear the soft-delete flags.
   const dead = await db.query.users.findFirst({ where: and(eq(users.email, body.email), isNotNull(users.deletedAt)) })
-  if (dead && await bcrypt.compare(body.password, dead.passwordHash)) {
-    await db.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, dead.id))
-    logAudit(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id, metadata: { email: dead.email } })
-    return { id: dead.id, email: dead.email }
+  if (dead) {
+    if (await bcrypt.compare(body.password, dead.passwordHash)) {
+      await db.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, dead.id))
+      logAudit(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id, metadata: { email: dead.email } })
+      return { id: dead.id, email: dead.email }
+    }
+    throw new ConflictError(`Email '${body.email}' is already registered`)
   }
 
   const passwordHash = await bcrypt.hash(body.password, 12)

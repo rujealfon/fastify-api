@@ -170,7 +170,7 @@ All scripts run via `nub` (or `nubx` inside containers). See [package.json](pack
 
 | Method | Path | Permission | Description |
 |---|---|---|---|
-| GET | `/api/v1/audit-logs` | `role:read:any` | List all audit logs (paginated) |
+| GET | `/api/v1/audit-logs` | `audit-log:read:any` | List all audit logs (paginated) |
 | GET | `/api/v1/users/:id/audit-logs` | authenticated + self-or-`user:read:any` | List logs for a specific user |
 
 Each log entry records `action`, `resource_type`, `resource_id`, `metadata`, and `created_at`. Logged actions: `auth.registered`, `auth.logged_in`, `auth.logged_out`, `auth.account_restored`, `user.created`, `user.updated`, `user.deleted`, `product.created`, `product.updated`, `product.deleted`.
@@ -228,6 +228,7 @@ Permissions follow the `resource:action:scope` format:
 | `role:update:any` | Modify roles and their permission assignments |
 | `role:delete:any` | Delete custom roles |
 | `permission:read:any` | List available permissions |
+| `audit-log:read:any` | List all audit logs |
 
 ### Seeded roles
 
@@ -235,8 +236,8 @@ Three roles are created by `nub db:seed` (idempotent):
 
 | Role | System role | Permissions |
 |---|---|---|
-| `super-admin` | Yes | All 14 permissions + unconditional bypass of all permission checks |
-| `admin` | No | All `user:*`, `role:read:any`, `permission:read:any` |
+| `super-admin` | Yes | All 15 permissions + unconditional bypass of all permission checks |
+| `admin` | No | All `user:*`, `role:read:any`, `permission:read:any`, `audit-log:read:any` |
 | `user` | No | `user:read:own`, `user:update:own` |
 
 **System roles** (`isSystemRole: true`) cannot be deleted via the API. The `super-admin` role bypasses all permission checks entirely — useful for bootstrapping and emergency access. Users registering via `/api/v1/auth/register` are automatically assigned the `user` role.

@@ -323,12 +323,11 @@ describe('auth API', () => {
       expect(me.json<{ data: { profile: { firstName: string | null } } }>().data.profile.firstName).toBe('Iris')
     })
 
-    it('creates a new account when re-registering with a wrong password', async () => {
-      const id = await registerThenDelete('frank@example.com')
+    it('returns 409 when re-registering a soft-deleted account with the wrong password', async () => {
+      await registerThenDelete('frank@example.com')
 
       const again = await register('frank@example.com', 'differentpw')
-      expect(again.statusCode).toBe(201)
-      expect(again.json<{ data: { id: string } }>().data.id).not.toBe(id)
+      expect(again.statusCode).toBe(409)
     })
 
     it('does not let a soft-deleted account log in', async () => {
@@ -336,14 +335,16 @@ describe('auth API', () => {
       expect((await login('grace@example.com', 'password123')).statusCode).toBe(401)
     })
 
-    it('returns 409 (not 500) when a deleted and an active row share the email', async () => {
-      const email = 'henry@example.com'
-      // delete the original, then fork a new active account with a different password
-      await registerThenDelete(email)
-      expect((await register(email, 'differentpw')).statusCode).toBe(201)
-      // a deleted row + an active row now share the email; a third register must
-      // see the active row and conflict cleanly, never hit the unique index
-      expect((await register(email, 'password123')).statusCode).toBe(409)
+    it('does not block correct-password reactivation after a failed wrong-password attempt', async () => {
+      const id = await registerThenDelete('henry@example.com')
+
+      // wrong password → 409, no orphan account created
+      expect((await register('henry@example.com', 'wrongpassword')).statusCode).toBe(409)
+
+      // original password still reactivates the same account
+      const again = await register('henry@example.com', 'password123')
+      expect(again.statusCode).toBe(201)
+      expect(again.json<{ data: { id: string } }>().data.id).toBe(id)
     })
   })
 })

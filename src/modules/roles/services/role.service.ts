@@ -44,7 +44,10 @@ export async function createRole(db: Db, body: CreateRoleBody) {
   }
 }
 
-export async function updateRole(db: Db, id: string, body: UpdateRoleBody) {
+export async function updateRole(db: Db, id: string, body: UpdateRoleBody, callerIsSuperAdmin = false) {
+  const existing = await findRoleById(db, id)
+  if (existing.isSystemRole && !callerIsSuperAdmin)
+    throw new ForbiddenError('System roles cannot be modified')
   try {
     const [row] = await db.update(roles).set(body).where(eq(roles.id, id)).returning()
     if (!row)
@@ -65,17 +68,22 @@ export async function deleteRole(db: Db, id: string) {
   await db.delete(roles).where(eq(roles.id, id))
 }
 
-export async function assignPermissionToRole(db: Db, roleId: string, permId: string) {
-  const [, perm] = await Promise.all([
+export async function assignPermissionToRole(db: Db, roleId: string, permId: string, callerIsSuperAdmin = false) {
+  const [role, perm] = await Promise.all([
     findRoleById(db, roleId),
     db.query.permissions.findFirst({ where: eq(permissions.id, permId) }),
   ])
+  if (role.isSystemRole && !callerIsSuperAdmin)
+    throw new ForbiddenError('System role permissions can only be modified by a super-admin')
   if (!perm)
     throw new NotFoundError('Permission', permId)
   await db.insert(rolePermissions).values({ roleId, permissionId: permId }).onConflictDoNothing()
 }
 
-export async function removePermissionFromRole(db: Db, roleId: string, permId: string) {
+export async function removePermissionFromRole(db: Db, roleId: string, permId: string, callerIsSuperAdmin = false) {
+  const role = await findRoleById(db, roleId)
+  if (role.isSystemRole && !callerIsSuperAdmin)
+    throw new ForbiddenError('System role permissions can only be modified by a super-admin')
   await db.delete(rolePermissions).where(
     and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permId)),
   )
