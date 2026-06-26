@@ -175,11 +175,11 @@ describe('auth API', () => {
       })
     })
 
-    it('returns token in body and sets no cookie (capacitor origin)', async () => {
+    it('returns token in body and sets no cookie', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: { email: 'mobile@example.com', password: 'password123' },
       })
       expect(res.statusCode).toBe(200)
@@ -190,21 +190,30 @@ describe('auth API', () => {
       expect(res.headers['set-cookie']).toBeUndefined()
     })
 
-    it('accepts http://localhost origin (Android WebView)', async () => {
+    it('returns 403 for wrong api key', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'http://localhost' },
+        headers: { 'x-mobile-api-key': 'wrong-key' },
         payload: { email: 'mobile@example.com', password: 'password123' },
       })
-      expect(res.statusCode).toBe(200)
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('returns 403 when api key header is absent', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        payload: { email: 'mobile@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(403)
     })
 
     it('returned token authenticates protected routes as Bearer', async () => {
       const loginRes = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: { email: 'mobile@example.com', password: 'password123' },
       })
       const { data } = loginRes.json<{ data: { token: string } }>()
@@ -217,30 +226,11 @@ describe('auth API', () => {
       expect(res.statusCode).toBe(200)
     })
 
-    it('returns 403 for disallowed origin', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'https://evil.com' },
-        payload: { email: 'mobile@example.com', password: 'password123' },
-      })
-      expect(res.statusCode).toBe(403)
-    })
-
-    it('returns 403 when origin header is absent', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/v1/auth/mobile/login',
-        payload: { email: 'mobile@example.com', password: 'password123' },
-      })
-      expect(res.statusCode).toBe(403)
-    })
-
     it('returns 401 for wrong password', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: { email: 'mobile@example.com', password: 'wrongpassword' },
       })
       expect(res.statusCode).toBe(401)
@@ -250,7 +240,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: { email: 'ghost@example.com', password: 'password123' },
       })
       expect(res.statusCode).toBe(401)
@@ -260,7 +250,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: {},
       })
       expect(res.statusCode).toBe(400)
@@ -321,6 +311,22 @@ describe('auth API', () => {
       const me = await app.inject({ method: 'GET', url: '/api/v1/profile', headers: { authorization: `Bearer ${token2}` } })
       expect(me.statusCode).toBe(200)
       expect(me.json<{ data: { profile: { firstName: string | null } } }>().data.profile.firstName).toBe('Iris')
+    })
+
+    it('reactivated account retains the user role and can access own-account routes', async () => {
+      const id = await registerThenDelete('jay@example.com')
+
+      await register('jay@example.com', 'password123')
+      const token = extractTokenFromCookie((await login('jay@example.com', 'password123')).headers['set-cookie'])
+
+      // user:update:own permission must be restored — self-PATCH requires it
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/users/${id}`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { profile: { firstName: 'Jay' } },
+      })
+      expect(patch.statusCode).toBe(200)
     })
 
     it('returns 409 when re-registering a soft-deleted account with the wrong password', async () => {

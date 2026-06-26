@@ -1,8 +1,18 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, registerAdminAndLogin, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
+import { createTestApp, registerAdminAndLogin, registerAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
-const settle = () => new Promise<void>(r => setTimeout(r, 50))
+const delay = () => new Promise<void>(r => setTimeout(r, 50))
+
+async function eventually<T>(read: () => Promise<T>, done: (value: T) => boolean) {
+  for (let i = 0; i < 10; i++) {
+    const value = await read()
+    if (done(value))
+      return value
+    await delay()
+  }
+  return read()
+}
 
 describe('audit logs API', () => {
   let app: FastifyInstance
@@ -49,14 +59,16 @@ describe('audit logs API', () => {
 
     it('records auth.registered and auth.logged_in on register+login', async () => {
       const token = await registerAdminAndLogin(app)
-      // logActivity is fire-and-forget; give the pending inserts time to commit
-      await settle()
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/v1/audit-logs',
-        headers: { authorization: `Bearer ${token}` },
-      })
-      const body = res.json()
+      const body = await eventually(
+        async () => (await app.inject({
+          method: 'GET',
+          url: '/api/v1/audit-logs',
+          headers: { authorization: `Bearer ${token}` },
+        })).json(),
+        body => ['auth.registered', 'auth.logged_in'].every(action =>
+          body.data.some((l: { action: string }) => l.action === action),
+        ),
+      )
       const actions = body.data.map((l: { action: string }) => l.action)
       expect(actions).toContain('auth.registered')
       expect(actions).toContain('auth.logged_in')
@@ -154,14 +166,15 @@ describe('audit logs API', () => {
       })
 
       // Wait for fire-and-forget insert to settle
-      await settle()
-
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/v1/audit-logs',
-        headers: { authorization: `Bearer ${adminToken}` },
-      })
-      const actions = res.json().data.map((l: { action: string }) => l.action)
+      const body = await eventually(
+        async () => (await app.inject({
+          method: 'GET',
+          url: '/api/v1/audit-logs',
+          headers: { authorization: `Bearer ${adminToken}` },
+        })).json(),
+        body => body.data.some((l: { action: string }) => l.action === 'product.created'),
+      )
+      const actions = body.data.map((l: { action: string }) => l.action)
       expect(actions).toContain('product.created')
     })
 
@@ -183,34 +196,37 @@ describe('audit logs API', () => {
         headers: { authorization: `Bearer ${userToken}` },
       })
 
-      await settle()
-
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/v1/audit-logs',
-        headers: { authorization: `Bearer ${adminToken}` },
-      })
-      const log = res.json().data.find((l: { action: string }) => l.action === 'product.deleted')
+      const body = await eventually(
+        async () => (await app.inject({
+          method: 'GET',
+          url: '/api/v1/audit-logs',
+          headers: { authorization: `Bearer ${adminToken}` },
+        })).json(),
+        body => body.data.some((l: { action: string }) => l.action === 'product.deleted'),
+      )
+      const log = body.data.find((l: { action: string }) => l.action === 'product.deleted')
       expect(log).toBeDefined()
       expect(log.metadata).toMatchObject({ name: 'Doomed Widget', price: '4.99' })
     })
 
     it('populates metadata on auth.logged_in', async () => {
       const adminToken = await registerAdminAndLogin(app)
-      await settle()
-
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/v1/audit-logs',
-        headers: { authorization: `Bearer ${adminToken}` },
-      })
-      const log = res.json().data.find((l: { action: string }) => l.action === 'auth.logged_in')
+      const body = await eventually(
+        async () => (await app.inject({
+          method: 'GET',
+          url: '/api/v1/audit-logs',
+          headers: { authorization: `Bearer ${adminToken}` },
+        })).json(),
+        body => body.data.some((l: { action: string }) => l.action === 'auth.logged_in'),
+      )
+      const log = body.data.find((l: { action: string }) => l.action === 'auth.logged_in')
       expect(log).toBeDefined()
       expect(log.metadata).toMatchObject({ email: expect.any(String), ip: expect.any(String) })
     })
 
     it('records user.deleted after deleting a user', async () => {
-      const adminToken = await registerAdminAndLogin(app)
+      const observerToken = await registerSuperAdminAndLogin(app, { email: 'observer@example.com', password: 'password123' })
+      const adminToken = await registerAdminAndLogin(app, { email: 'todelete@example.com', password: 'password123' })
       const profileRes = await app.inject({
         method: 'GET',
         url: '/api/v1/profile',
@@ -224,14 +240,15 @@ describe('audit logs API', () => {
         headers: { authorization: `Bearer ${adminToken}` },
       })
 
-      await settle()
-
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/v1/audit-logs',
-        headers: { authorization: `Bearer ${adminToken}` },
-      })
-      const actions = res.json().data.map((l: { action: string }) => l.action)
+      const body = await eventually(
+        async () => (await app.inject({
+          method: 'GET',
+          url: '/api/v1/audit-logs',
+          headers: { authorization: `Bearer ${observerToken}` },
+        })).json(),
+        body => body.data.some((l: { action: string }) => l.action === 'user.deleted'),
+      )
+      const actions = body.data.map((l: { action: string }) => l.action)
       expect(actions).toContain('user.deleted')
     })
   })

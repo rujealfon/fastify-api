@@ -1,5 +1,6 @@
 import type { RouteMap } from '@/contract/types.js'
 import { z } from 'zod'
+import { PERMISSIONS } from '@/common/constants/index.js'
 import { apiErrorSchema, apiListSchema, apiSuccessSchema, paginationQuerySchema, uuidParamSchema } from '@/common/schemas/index.js'
 import {
   createUserBodySchema,
@@ -17,7 +18,7 @@ export const usersSchema = {
     method: 'GET' as const,
     path: '/api/v1/users',
     tags: ['Users'],
-    permission: 'user:read:any',
+    permission: PERMISSIONS.USER.READ_ANY,
     query: paginationQuerySchema,
     responses: {
       200: apiListSchema(userSchema),
@@ -29,7 +30,7 @@ export const usersSchema = {
     method: 'GET' as const,
     path: '/api/v1/users/:id',
     tags: ['Users'],
-    permission: 'user:read:any',
+    auth: true,
     params: uuidParamSchema,
     responses: {
       200: apiSuccessSchema(userSchema),
@@ -42,7 +43,7 @@ export const usersSchema = {
     method: 'POST' as const,
     path: '/api/v1/users',
     tags: ['Users'],
-    permission: 'user:create:any',
+    permission: PERMISSIONS.USER.CREATE_ANY,
     body: createUserBodySchema,
     responses: {
       201: apiSuccessSchema(userSchema),
@@ -83,7 +84,7 @@ export const usersSchema = {
     method: 'POST' as const,
     path: '/api/v1/users/:id/roles/:roleId',
     tags: ['Users'],
-    permission: 'role:update:any',
+    permission: PERMISSIONS.ROLE.UPDATE_ANY,
     params: userRoleParamsSchema,
     responses: {
       200: apiSuccessSchema(z.null()),
@@ -96,7 +97,7 @@ export const usersSchema = {
     method: 'DELETE' as const,
     path: '/api/v1/users/:id/roles/:roleId',
     tags: ['Users'],
-    permission: 'role:update:any',
+    permission: PERMISSIONS.ROLE.UPDATE_ANY,
     params: userRoleParamsSchema,
     responses: {
       200: apiSuccessSchema(z.null()),

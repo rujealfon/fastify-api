@@ -1,4 +1,5 @@
 import type { FastifyRequest } from 'fastify'
+import { PERMISSIONS } from '@/common/constants/index.js'
 import { ForbiddenError } from '@/common/errors/AppError.js'
 import { usersSchema } from '@/contract/schemas/users.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
@@ -23,6 +24,7 @@ export default createFastifyRpcPlugin(usersSchema, {
   },
 
   get: async ({ params, request }) => {
+    assertSelfOrAdmin(request, params.id, PERMISSIONS.USER.READ_ANY)
     const user = await userService.findUserById(request.server.db, params.id)
     return { status: 200 as const, body: { success: true as const, data: user } }
   },
@@ -34,14 +36,14 @@ export default createFastifyRpcPlugin(usersSchema, {
   },
 
   update: async ({ params, body, request }) => {
-    assertSelfOrAdmin(request, params.id, 'user:update:any')
+    assertSelfOrAdmin(request, params.id, PERMISSIONS.USER.UPDATE_ANY)
     const user = await userService.updateUser(request.server.db, params.id, body)
     logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'user.updated', resourceType: 'user', resourceId: params.id, metadata: { changes: body } })
     return { status: 200 as const, body: { success: true as const, data: user } }
   },
 
   delete: async ({ params, request }) => {
-    assertSelfOrAdmin(request, params.id, 'user:delete:any')
+    assertSelfOrAdmin(request, params.id, PERMISSIONS.USER.DELETE_ANY)
     const actorId = request.requestContext.get('userId')
     await userService.deleteUser(request.server.db, params.id, actorId)
     logAudit(request.server.db, { userId: actorId, action: 'user.deleted', resourceType: 'user', resourceId: params.id })
@@ -51,12 +53,14 @@ export default createFastifyRpcPlugin(usersSchema, {
   assignRole: async ({ params, request }) => {
     const isSuperAdmin = request.requestContext.get('isSuperAdmin') ?? false
     await userService.assignRoleToUser(request.server.db, params.id, params.roleId, isSuperAdmin)
+    logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'role.assigned', resourceType: 'user', resourceId: params.id, metadata: { roleId: params.roleId } })
     return { status: 200 as const, body: { success: true as const, data: null } }
   },
 
   removeRole: async ({ params, request }) => {
     const isSuperAdmin = request.requestContext.get('isSuperAdmin') ?? false
     await userService.removeRoleFromUser(request.server.db, params.id, params.roleId, isSuperAdmin)
+    logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'role.removed', resourceType: 'user', resourceId: params.id, metadata: { roleId: params.roleId } })
     return { status: 200 as const, body: { success: true as const, data: null } }
   },
 })

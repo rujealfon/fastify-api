@@ -2,7 +2,7 @@ import type { Db } from '@/db/index.js'
 import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
 import bcrypt from 'bcryptjs'
 import { and, count, eq, isNull } from 'drizzle-orm'
-import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
+import { PG_UNIQUE_VIOLATION, ROLES } from '@/common/constants/index.js'
 import { ConflictError, ForbiddenError, NotFoundError } from '@/common/errors/AppError.js'
 import { profiles, roles, userRoles, users } from '@/db/schema/index.js'
 
@@ -145,7 +145,14 @@ export async function removeRoleFromUser(db: Db, userId: string, roleId: string,
     findUserById(db, userId),
     db.query.roles.findFirst({ where: eq(roles.id, roleId) }),
   ])
-  if (role?.isSystemRole && !callerIsSuperAdmin)
+  if (!role)
+    throw new NotFoundError('Role', roleId)
+  if (role.isSystemRole && !callerIsSuperAdmin)
     throw new ForbiddenError('System roles can only be removed by a super-admin')
+  if (role.name === ROLES.SUPER_ADMIN) {
+    const [{ total }] = await db.select({ total: count() }).from(userRoles).where(eq(userRoles.roleId, roleId))
+    if (total <= 1)
+      throw new ForbiddenError('Cannot remove the last super-admin')
+  }
   await db.delete(userRoles).where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
 }

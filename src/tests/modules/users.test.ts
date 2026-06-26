@@ -423,9 +423,10 @@ describe('users API', () => {
       expect(res.statusCode).toBe(403)
     })
 
-    it('forbids a non-admin from getting any user by id', async () => {
-      const { id, token: t } = await registerNormal('n2@example.com')
-      const res = await app.inject({ method: 'GET', url: `/api/v1/users/${id}`, headers: auth(t) })
+    it('forbids a non-admin from getting another user by id', async () => {
+      const { id: otherId } = await registerNormal('n2@example.com')
+      const { token: t } = await registerNormal('n2b@example.com')
+      const res = await app.inject({ method: 'GET', url: `/api/v1/users/${otherId}`, headers: auth(t) })
       expect(res.statusCode).toBe(403)
     })
 
@@ -529,6 +530,17 @@ describe('users API', () => {
         headers: { authorization: `Bearer ${superToken}` },
       })
       expect(res.statusCode).toBe(200)
+    })
+
+    it('returns 404 when removing a role with an unknown roleId', async () => {
+      const superToken = await registerSuperAdminAndLogin(app)
+      const { id } = await registerNormal('rmrole404@example.com')
+      const res = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/users/${id}/roles/00000000-0000-0000-0000-000000000000`,
+        headers: { authorization: `Bearer ${superToken}` },
+      })
+      expect(res.statusCode).toBe(404)
     })
 
     it('does not let a user escalate to admin via the update body', async () => {

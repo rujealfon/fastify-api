@@ -1,8 +1,8 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import fp from 'fastify-plugin'
 import { ROLES } from '@/common/constants/index.js'
-import { userRoles } from '@/db/schema/index.js'
+import { userRoles, users } from '@/db/schema/index.js'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -23,6 +23,14 @@ const authDecorator: FastifyPluginAsync = async (fastify) => {
     const payload = request.user as { sub?: string, id?: string }
     const userId = payload.sub ?? payload.id
     if (!userId)
+      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
+
+    const [activeUser] = await request.server.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+      .limit(1)
+    if (!activeUser)
       return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
 
     // ponytail: add Redis cache when DB query becomes a bottleneck

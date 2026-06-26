@@ -22,6 +22,9 @@ export async function registerUser(db: Db, body: RegisterBody) {
   if (dead) {
     if (await bcrypt.compare(body.password, dead.passwordHash)) {
       await db.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, dead.id))
+      const [userRole] = await db.select({ id: roles.id }).from(roles).where(eq(roles.name, 'user')).limit(1)
+      if (userRole)
+        await db.insert(userRoles).values({ userId: dead.id, roleId: userRole.id }).onConflictDoNothing()
       logAudit(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id, metadata: { email: dead.email } })
       return { id: dead.id, email: dead.email }
     }
