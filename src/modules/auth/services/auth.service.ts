@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
 import { ConflictError, UnauthorizedError } from '@/common/errors/AppError.js'
-import { profiles, users } from '@/db/schema/index.js'
+import { profiles, roles, userRoles, users } from '@/db/schema/index.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
 
 export async function registerUser(db: Db, body: RegisterBody) {
@@ -36,6 +36,11 @@ export async function registerUser(db: Db, body: RegisterBody) {
 
       await tx.insert(profiles).values({ userId: row.id })
 
+      // Assign the default 'user' role if seed has been run
+      const [userRole] = await tx.select({ id: roles.id }).from(roles).where(eq(roles.name, 'user')).limit(1)
+      if (userRole)
+        await tx.insert(userRoles).values({ userId: row.id, roleId: userRole.id })
+
       return row
     })
     logAudit(db, { userId: user.id, action: 'auth.registered', resourceType: 'user', resourceId: user.id, metadata: { email: user.email } })
@@ -60,5 +65,5 @@ export async function loginUser(db: Db, body: LoginBody) {
   if (!valid)
     throw new UnauthorizedError('Invalid email or password')
 
-  return { id: user.id, email: user.email, role: user.role }
+  return { id: user.id, email: user.email }
 }

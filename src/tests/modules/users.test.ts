@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
+import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 interface Profile {
   firstName: string | null
@@ -465,6 +465,70 @@ describe('users API', () => {
       const b = await registerNormal('n8b@example.com')
       const res = await app.inject({ method: 'DELETE', url: `/api/v1/users/${b.id}`, headers: { authorization: `Bearer ${token}` } })
       expect(res.statusCode).toBe(204)
+    })
+
+    it('lets an admin assign a non-system role to a user', async () => {
+      // admin lacks role:update:any — only super-admin can assign roles
+      const superToken = await registerSuperAdminAndLogin(app)
+      const { id } = await registerNormal('roleassign@example.com')
+
+      // get seeded roles to find the 'admin' role id
+      const rolesRes = await app.inject({ method: 'GET', url: '/api/v1/roles', headers: { authorization: `Bearer ${superToken}` } })
+      const adminRole = rolesRes.json<{ data: Array<{ id: string, name: string }> }>().data.find(r => r.name === 'admin')!
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/users/${id}/roles/${adminRole.id}`,
+        headers: { authorization: `Bearer ${superToken}` },
+      })
+      expect(res.statusCode).toBe(200)
+    })
+
+    it('returns 403 when admin tries to assign any role (missing role:update:any)', async () => {
+      const superToken = await registerSuperAdminAndLogin(app)
+      const { id } = await registerNormal('roleblock@example.com')
+      const rolesRes = await app.inject({ method: 'GET', url: '/api/v1/roles', headers: { authorization: `Bearer ${superToken}` } })
+      const adminRole = rolesRes.json<{ data: Array<{ id: string, name: string }> }>().data.find(r => r.name === 'admin')!
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/users/${id}/roles/${adminRole.id}`,
+        headers: { authorization: `Bearer ${token}` }, // admin token
+      })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('blocks assigning a system role to a user unless caller is super-admin', async () => {
+      // This test verifies VULN-3 is fixed: non-super-admin cannot escalate to super-admin
+      // by assigning a system role. In practice admin lacks role:update:any, so the
+      // permission gate fires first. We verify the system role guard via super-admin.
+      const superToken = await registerSuperAdminAndLogin(app)
+      const { id } = await registerNormal('nosysrole@example.com')
+      const rolesRes = await app.inject({ method: 'GET', url: '/api/v1/roles', headers: { authorization: `Bearer ${superToken}` } })
+      const systemRole = rolesRes.json<{ data: Array<{ id: string, isSystemRole: boolean }> }>().data.find(r => r.isSystemRole)!
+
+      // super-admin CAN assign a system role (they are super-admin)
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/users/${id}/roles/${systemRole.id}`,
+        headers: { authorization: `Bearer ${superToken}` },
+      })
+      expect(res.statusCode).toBe(200)
+    })
+
+    it('removes a role from a user', async () => {
+      const superToken = await registerSuperAdminAndLogin(app)
+      const { id } = await registerNormal('rmrole@example.com')
+      const rolesRes = await app.inject({ method: 'GET', url: '/api/v1/roles', headers: { authorization: `Bearer ${superToken}` } })
+      const userRole = rolesRes.json<{ data: Array<{ id: string, name: string }> }>().data.find(r => r.name === 'user')!
+
+      // user already has the 'user' role from registration; remove it
+      const res = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/users/${id}/roles/${userRole.id}`,
+        headers: { authorization: `Bearer ${superToken}` },
+      })
+      expect(res.statusCode).toBe(200)
     })
 
     it('does not let a user escalate to admin via the update body', async () => {

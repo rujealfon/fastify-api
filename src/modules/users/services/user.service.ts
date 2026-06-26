@@ -3,8 +3,8 @@ import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/ind
 import bcrypt from 'bcryptjs'
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
-import { ConflictError, NotFoundError } from '@/common/errors/AppError.js'
-import { profiles, users } from '@/db/schema/index.js'
+import { ConflictError, ForbiddenError, NotFoundError } from '@/common/errors/AppError.js'
+import { profiles, roles, userRoles, users } from '@/db/schema/index.js'
 
 const userColumns = {
   id: true,
@@ -126,4 +126,21 @@ export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
 export async function deleteUser(db: Db, id: string, deletedBy?: string) {
   await findUserById(db, id)
   await db.update(users).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(users.id, id))
+}
+
+export async function assignRoleToUser(db: Db, userId: string, roleId: string, callerIsSuperAdmin = false) {
+  const [, role] = await Promise.all([
+    findUserById(db, userId),
+    db.query.roles.findFirst({ where: eq(roles.id, roleId) }),
+  ])
+  if (!role)
+    throw new NotFoundError('Role', roleId)
+  if (role.isSystemRole && !callerIsSuperAdmin)
+    throw new ForbiddenError('System roles can only be assigned by a super-admin')
+  await db.insert(userRoles).values({ userId, roleId }).onConflictDoNothing()
+}
+
+export async function removeRoleFromUser(db: Db, userId: string, roleId: string) {
+  await findUserById(db, userId)
+  await db.delete(userRoles).where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
 }

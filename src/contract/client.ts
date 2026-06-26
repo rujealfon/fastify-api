@@ -2,8 +2,10 @@ import type { z } from 'zod'
 import type { RouteMap } from './types.js'
 import { auditLogsSchema } from './schemas/audit-logs.js'
 import { authSchema } from './schemas/auth.js'
+import { permissionsSchema } from './schemas/permissions.js'
 import { productsSchema } from './schemas/products.js'
 import { profileSchema } from './schemas/profile.js'
+import { rolesSchema } from './schemas/roles.js'
 import { usersSchema } from './schemas/users.js'
 
 // ---- Type helpers ----
@@ -120,8 +122,10 @@ export function createApiClient(
   return {
     auditLogs: buildNsClient(auditLogsSchema, baseUrl, options?.getToken),
     auth: buildNsClient(authSchema, baseUrl, options?.getToken),
+    permissions: buildNsClient(permissionsSchema, baseUrl, options?.getToken),
     products: buildNsClient(productsSchema, baseUrl, options?.getToken),
     profile: buildNsClient(profileSchema, baseUrl, options?.getToken),
+    roles: buildNsClient(rolesSchema, baseUrl, options?.getToken),
     users: buildNsClient(usersSchema, baseUrl, options?.getToken),
   }
 }
