@@ -1,13 +1,12 @@
 import type { FastifyReply } from 'fastify'
-import { MOBILE_ORIGINS } from '@/common/constants/index.js'
 import { ForbiddenError } from '@/common/errors/AppError.js'
 import { authSchema } from '@/contract/schemas/auth.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
 import * as authService from '@/modules/auth/services/auth.service.js'
 import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
-function signToken(user: { id: string, email: string, role: string }, reply: FastifyReply) {
-  return reply.jwtSign({ sub: user.id, email: user.email, role: user.role })
+function signToken(user: { id: string, email: string }, reply: FastifyReply) {
+  return reply.jwtSign({ sub: user.id, email: user.email })
 }
 
 export default createFastifyRpcPlugin(authSchema, {
@@ -30,7 +29,7 @@ export default createFastifyRpcPlugin(authSchema, {
   },
 
   mobileLogin: async ({ body, request, reply }) => {
-    if (!MOBILE_ORIGINS.includes(request.headers.origin ?? ''))
+    if (request.headers['x-mobile-api-key'] !== request.server.config.MOBILE_API_KEY)
       throw new ForbiddenError('Mobile login is restricted to mobile clients')
     const user = await authService.loginUser(request.server.db, body)
     const token = await signToken(user, reply)

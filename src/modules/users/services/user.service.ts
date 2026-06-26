@@ -2,9 +2,9 @@ import type { Db } from '@/db/index.js'
 import type { CreateUserBody, UpdateUserBody } from '@/modules/users/schemas/index.js'
 import bcrypt from 'bcryptjs'
 import { and, count, eq, isNull } from 'drizzle-orm'
-import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
-import { ConflictError, NotFoundError } from '@/common/errors/AppError.js'
-import { profiles, users } from '@/db/schema/index.js'
+import { PG_UNIQUE_VIOLATION, ROLES } from '@/common/constants/index.js'
+import { ConflictError, ForbiddenError, NotFoundError } from '@/common/errors/AppError.js'
+import { profiles, roles, userRoles, users } from '@/db/schema/index.js'
 
 const userColumns = {
   id: true,
@@ -125,5 +125,44 @@ export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
 
 export async function deleteUser(db: Db, id: string, deletedBy?: string) {
   await findUserById(db, id)
+  const superAdminRole = await db.query.roles.findFirst({ where: eq(roles.name, ROLES.SUPER_ADMIN) })
+  if (superAdminRole) {
+    const userHasRole = await db.query.userRoles.findFirst({ where: and(eq(userRoles.userId, id), eq(userRoles.roleId, superAdminRole.id)) })
+    if (userHasRole) {
+      const [{ total }] = await db.select({ total: count() }).from(userRoles).innerJoin(users, eq(users.id, userRoles.userId)).where(and(eq(userRoles.roleId, superAdminRole.id), isNull(users.deletedAt)))
+      if (total <= 1)
+        throw new ForbiddenError('Cannot delete the last super-admin')
+    }
+  }
+  await db.delete(userRoles).where(eq(userRoles.userId, id))
   await db.update(users).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(users.id, id))
+}
+
+export async function assignRoleToUser(db: Db, userId: string, roleId: string, callerIsSuperAdmin = false) {
+  const [, role] = await Promise.all([
+    findUserById(db, userId),
+    db.query.roles.findFirst({ where: eq(roles.id, roleId) }),
+  ])
+  if (!role)
+    throw new NotFoundError('Role', roleId)
+  if (role.isSystemRole && !callerIsSuperAdmin)
+    throw new ForbiddenError('System roles can only be assigned by a super-admin')
+  await db.insert(userRoles).values({ userId, roleId }).onConflictDoNothing()
+}
+
+export async function removeRoleFromUser(db: Db, userId: string, roleId: string, callerIsSuperAdmin = false) {
+  const [, role] = await Promise.all([
+    findUserById(db, userId),
+    db.query.roles.findFirst({ where: eq(roles.id, roleId) }),
+  ])
+  if (!role)
+    throw new NotFoundError('Role', roleId)
+  if (role.isSystemRole && !callerIsSuperAdmin)
+    throw new ForbiddenError('System roles can only be removed by a super-admin')
+  if (role.name === ROLES.SUPER_ADMIN) {
+    const [{ total }] = await db.select({ total: count() }).from(userRoles).innerJoin(users, eq(users.id, userRoles.userId)).where(and(eq(userRoles.roleId, roleId), isNull(users.deletedAt)))
+    if (total <= 1)
+      throw new ForbiddenError('Cannot remove the last super-admin')
+  }
+  await db.delete(userRoles).where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
 }

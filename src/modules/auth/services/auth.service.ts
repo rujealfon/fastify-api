@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
 import { ConflictError, UnauthorizedError } from '@/common/errors/AppError.js'
-import { profiles, users } from '@/db/schema/index.js'
+import { profiles, roles, userRoles, users } from '@/db/schema/index.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
 
 export async function registerUser(db: Db, body: RegisterBody) {
@@ -19,10 +19,16 @@ export async function registerUser(db: Db, body: RegisterBody) {
   // window before the cleanup cron hard-deletes it). Profile row still exists, so
   // we only clear the soft-delete flags.
   const dead = await db.query.users.findFirst({ where: and(eq(users.email, body.email), isNotNull(users.deletedAt)) })
-  if (dead && await bcrypt.compare(body.password, dead.passwordHash)) {
-    await db.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, dead.id))
-    logAudit(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id, metadata: { email: dead.email } })
-    return { id: dead.id, email: dead.email }
+  if (dead) {
+    if (await bcrypt.compare(body.password, dead.passwordHash)) {
+      await db.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, dead.id))
+      const [userRole] = await db.select({ id: roles.id }).from(roles).where(eq(roles.name, 'user')).limit(1)
+      if (userRole)
+        await db.insert(userRoles).values({ userId: dead.id, roleId: userRole.id }).onConflictDoNothing()
+      logAudit(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id, metadata: { email: dead.email } })
+      return { id: dead.id, email: dead.email }
+    }
+    throw new ConflictError(`Email '${body.email}' is already registered`)
   }
 
   const passwordHash = await bcrypt.hash(body.password, 12)
@@ -35,6 +41,11 @@ export async function registerUser(db: Db, body: RegisterBody) {
         .returning({ id: users.id, email: users.email })
 
       await tx.insert(profiles).values({ userId: row.id })
+
+      // Assign the default 'user' role if seed has been run
+      const [userRole] = await tx.select({ id: roles.id }).from(roles).where(eq(roles.name, 'user')).limit(1)
+      if (userRole)
+        await tx.insert(userRoles).values({ userId: row.id, roleId: userRole.id })
 
       return row
     })
@@ -60,5 +71,5 @@ export async function loginUser(db: Db, body: LoginBody) {
   if (!valid)
     throw new UnauthorizedError('Invalid email or password')
 
-  return { id: user.id, email: user.email, role: user.role }
+  return { id: user.id, email: user.email }
 }

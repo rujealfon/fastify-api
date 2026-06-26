@@ -10,6 +10,7 @@
 		"lint": "docker exec fastify_app nubx eslint src",
 		"lint:fix": "docker exec fastify_app nubx eslint src --fix",
 		"test:unit": "docker exec -e NODE_ENV=test fastify_app nubx vitest run",
+		"db:seed": "docker exec fastify_app nubx tsx src/db/seed.ts",
 		"prepare": "husky"
 	},
 	"dependencies": {

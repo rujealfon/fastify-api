@@ -21,17 +21,17 @@ Migrations live in `../../migrations/` and are committed to version control.
 
 ```bash
 # After editing a schema file, generate a new migration:
-pnpm db:generate
+nub db:generate
 
 # Apply migrations inside the running Docker container:
-pnpm db:migrate
+nub db:migrate
 ```
 
 ## Adding a new table
 
 1. Create `src/db/schema/<table>.ts` following the existing pattern (use `uuidv7()` for PKs, include `createdAt` / `updatedAt` / `deletedAt`).
 2. Export it from `src/db/schema/index.ts`.
-3. Run `pnpm db:generate` to create the migration.
+3. Run `nub db:generate` to create the migration.
 4. The table is immediately available in all services via `fastify.db`.
 
 ## Soft deletes

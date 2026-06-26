@@ -175,11 +175,11 @@ describe('auth API', () => {
       })
     })
 
-    it('returns token in body and sets no cookie (capacitor origin)', async () => {
+    it('returns token in body and sets no cookie', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: { email: 'mobile@example.com', password: 'password123' },
       })
       expect(res.statusCode).toBe(200)
@@ -190,21 +190,30 @@ describe('auth API', () => {
       expect(res.headers['set-cookie']).toBeUndefined()
     })
 
-    it('accepts http://localhost origin (Android WebView)', async () => {
+    it('returns 403 for wrong api key', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'http://localhost' },
+        headers: { 'x-mobile-api-key': 'wrong-key' },
         payload: { email: 'mobile@example.com', password: 'password123' },
       })
-      expect(res.statusCode).toBe(200)
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('returns 403 when api key header is absent', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        payload: { email: 'mobile@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(403)
     })
 
     it('returned token authenticates protected routes as Bearer', async () => {
       const loginRes = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: { email: 'mobile@example.com', password: 'password123' },
       })
       const { data } = loginRes.json<{ data: { token: string } }>()
@@ -217,30 +226,11 @@ describe('auth API', () => {
       expect(res.statusCode).toBe(200)
     })
 
-    it('returns 403 for disallowed origin', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'https://evil.com' },
-        payload: { email: 'mobile@example.com', password: 'password123' },
-      })
-      expect(res.statusCode).toBe(403)
-    })
-
-    it('returns 403 when origin header is absent', async () => {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/v1/auth/mobile/login',
-        payload: { email: 'mobile@example.com', password: 'password123' },
-      })
-      expect(res.statusCode).toBe(403)
-    })
-
     it('returns 401 for wrong password', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: { email: 'mobile@example.com', password: 'wrongpassword' },
       })
       expect(res.statusCode).toBe(401)
@@ -250,7 +240,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: { email: 'ghost@example.com', password: 'password123' },
       })
       expect(res.statusCode).toBe(401)
@@ -260,7 +250,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        headers: { origin: 'capacitor://localhost' },
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
         payload: {},
       })
       expect(res.statusCode).toBe(400)
@@ -323,12 +313,27 @@ describe('auth API', () => {
       expect(me.json<{ data: { profile: { firstName: string | null } } }>().data.profile.firstName).toBe('Iris')
     })
 
-    it('creates a new account when re-registering with a wrong password', async () => {
-      const id = await registerThenDelete('frank@example.com')
+    it('reactivated account retains the user role and can access own-account routes', async () => {
+      const id = await registerThenDelete('jay@example.com')
+
+      await register('jay@example.com', 'password123')
+      const token = extractTokenFromCookie((await login('jay@example.com', 'password123')).headers['set-cookie'])
+
+      // user:update:own permission must be restored — self-PATCH requires it
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/users/${id}`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { profile: { firstName: 'Jay' } },
+      })
+      expect(patch.statusCode).toBe(200)
+    })
+
+    it('returns 409 when re-registering a soft-deleted account with the wrong password', async () => {
+      await registerThenDelete('frank@example.com')
 
       const again = await register('frank@example.com', 'differentpw')
-      expect(again.statusCode).toBe(201)
-      expect(again.json<{ data: { id: string } }>().data.id).not.toBe(id)
+      expect(again.statusCode).toBe(409)
     })
 
     it('does not let a soft-deleted account log in', async () => {
@@ -336,14 +341,16 @@ describe('auth API', () => {
       expect((await login('grace@example.com', 'password123')).statusCode).toBe(401)
     })
 
-    it('returns 409 (not 500) when a deleted and an active row share the email', async () => {
-      const email = 'henry@example.com'
-      // delete the original, then fork a new active account with a different password
-      await registerThenDelete(email)
-      expect((await register(email, 'differentpw')).statusCode).toBe(201)
-      // a deleted row + an active row now share the email; a third register must
-      // see the active row and conflict cleanly, never hit the unique index
-      expect((await register(email, 'password123')).statusCode).toBe(409)
+    it('does not block correct-password reactivation after a failed wrong-password attempt', async () => {
+      const id = await registerThenDelete('henry@example.com')
+
+      // wrong password → 409, no orphan account created
+      expect((await register('henry@example.com', 'wrongpassword')).statusCode).toBe(409)
+
+      // original password still reactivates the same account
+      const again = await register('henry@example.com', 'password123')
+      expect(again.statusCode).toBe(201)
+      expect(again.json<{ data: { id: string } }>().data.id).toBe(id)
     })
   })
 })

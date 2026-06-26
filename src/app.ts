@@ -10,8 +10,10 @@ import { configSchema } from './config/schema.js'
 import auditLogsRoutes from './modules/audit-logs/routes/index.js'
 import authRoutes from './modules/auth/routes/index.js'
 import healthRoutes from './modules/health/routes/index.js'
+import permissionsRoutes from './modules/permissions/routes/index.js'
 import productsRoutes from './modules/products/routes/index.js'
 import profileRoutes from './modules/profile/routes/index.js'
+import rolesRoutes from './modules/roles/routes/index.js'
 import usersRoutes from './modules/users/routes/index.js'
 import compressPlugin from './plugins/compress.js'
 import cookiePlugin from './plugins/cookie.js'
@@ -122,6 +124,8 @@ export async function buildApp() {
   await fastify.register(profileRoutes)
   await fastify.register(usersRoutes)
   await fastify.register(productsRoutes)
+  await fastify.register(rolesRoutes)
+  await fastify.register(permissionsRoutes)
   await fastify.register(auditLogsRoutes)
 
   return fastify

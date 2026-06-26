@@ -15,11 +15,12 @@ export interface AppConfig {
   REDIS_URL: string
   COOKIE_SECRET: string
   OTEL_ENDPOINT: string
+  MOBILE_API_KEY: string
 }
 
 export const configSchema = {
   type: 'object',
-  required: ['DATABASE_URL', 'JWT_SECRET', 'REDIS_URL'],
+  required: ['DATABASE_URL', 'JWT_SECRET', 'REDIS_URL', 'MOBILE_API_KEY'],
   properties: {
     PORT: { type: 'integer', default: 3000 },
     HOST: { type: 'string', default: '0.0.0.0' },
@@ -35,5 +36,6 @@ export const configSchema = {
     REDIS_URL: { type: 'string' },
     COOKIE_SECRET: { type: 'string', default: '' },
     OTEL_ENDPOINT: { type: 'string', default: '' },
+    MOBILE_API_KEY: { type: 'string' },
   },
 } as const

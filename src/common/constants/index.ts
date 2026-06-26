@@ -5,7 +5,29 @@ export const PG_UNIQUE_VIOLATION = '23505'
 export const ROLES = {
   USER: 'user',
   ADMIN: 'admin',
+  SUPER_ADMIN: 'super-admin',
 } as const
 
-/** Allowed origins for the mobile login endpoint. */
-export const MOBILE_ORIGINS: readonly string[] = ['capacitor://localhost', 'http://localhost']
+/** Permission strings used by requirePermission and assertSelfOrAdmin. */
+export const PERMISSIONS = {
+  USER: {
+    READ_ANY: 'user:read:any',
+    CREATE_ANY: 'user:create:any',
+    UPDATE_ANY: 'user:update:any',
+    DELETE_ANY: 'user:delete:any',
+    READ_OWN: 'user:read:own',
+    UPDATE_OWN: 'user:update:own',
+  },
+  ROLE: {
+    READ_ANY: 'role:read:any',
+    CREATE_ANY: 'role:create:any',
+    UPDATE_ANY: 'role:update:any',
+    DELETE_ANY: 'role:delete:any',
+  },
+  PERMISSION: {
+    READ_ANY: 'permission:read:any',
+  },
+  AUDIT_LOG: {
+    READ_ANY: 'audit-log:read:any',
+  },
+} as const

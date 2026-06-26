@@ -32,17 +32,17 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
         continue
 
       const preValidation = []
-      if (route.auth || route.admin)
+      if (route.auth || route.permission)
         preValidation.push(fastify.authenticate)
-      if (route.admin)
-        preValidation.push(fastify.requireAdmin)
+      if (route.permission)
+        preValidation.push(fastify.requirePermission(route.permission))
 
       fastify.route({
         method: route.method as any,
         url: route.path,
         schema: {
           ...(route.tags !== undefined && { tags: route.tags }),
-          ...((route.auth || route.admin) && { security: [{ cookieAuth: [] }, { bearerAuth: [] }] }),
+          ...((route.auth || route.permission) && { security: [{ cookieAuth: [] }, { bearerAuth: [] }] }),
           ...(route.query !== undefined && { querystring: route.query }),
           ...(route.params !== undefined && { params: route.params }),
           ...(route.body !== undefined && { body: route.body }),
