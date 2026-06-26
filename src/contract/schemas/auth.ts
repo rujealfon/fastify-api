@@ -44,6 +44,7 @@ export const authSchema = {
     method: 'POST' as const,
     path: '/api/v1/auth/logout',
     tags: ['Auth'],
+    optionalAuth: true,
     responses: {
       200: apiSuccessSchema(z.null()),
     },
