@@ -297,6 +297,53 @@ describe('auth API', () => {
       )
       expect(log.resourceId).toBe(user.id)
     })
+
+    it('records null userId and resourceId when logging out without a token', async () => {
+      await app.inject({ method: 'POST', url: '/api/v1/auth/logout' })
+
+      const [log] = await eventually(
+        () => app.db
+          .select()
+          .from(auditLogs)
+          .where(eq(auditLogs.action, 'auth.logged_out'))
+          .limit(1),
+        rows => rows.length > 0,
+      )
+      expect(log.userId).toBeNull()
+      expect(log.resourceId).toBeNull()
+    })
+
+    it('records the logged-out user in the audit log when using a bearer token', async () => {
+      const registerRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'mobile-logout@example.com', password: 'password123' },
+      })
+      const { data: user } = registerRes.json<{ data: { id: string } }>()
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/mobile/login',
+        headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
+        payload: { email: 'mobile-logout@example.com', password: 'password123' },
+      })
+      const { data: { token } } = loginRes.json<{ data: { token: string } }>()
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/logout',
+        headers: { authorization: `Bearer ${token}` },
+      })
+
+      const [log] = await eventually(
+        () => app.db
+          .select()
+          .from(auditLogs)
+          .where(and(eq(auditLogs.action, 'auth.logged_out'), eq(auditLogs.userId, user.id)))
+          .limit(1),
+        rows => rows.length > 0,
+      )
+      expect(log.resourceId).toBe(user.id)
+    })
   })
 
   // ── Account retention: reactivation within the 90-day window ────────────────
