@@ -1,11 +1,13 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
+import { eq } from 'drizzle-orm'
 import fp from 'fastify-plugin'
-import { ROLES } from '@/common/constants/index.js'
+import { userRoles } from '@/db/schema/index.js'
 
 declare module 'fastify' {
   interface FastifyInstance {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
     requireAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    requirePermission: (permission: string) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>
   }
 }
 
@@ -13,23 +15,57 @@ const authDecorator: FastifyPluginAsync = async (fastify) => {
   fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.jwtVerify()
-      const payload = request.user as { sub?: string, id?: string, role?: string }
-      // RFC 7519 uses 'sub'; legacy tokens from older sign() calls used 'id'.
-      const userId = payload.sub ?? payload.id
-      if (userId) {
-        request.requestContext.set('userId', userId)
-      }
-      request.requestContext.set('role', payload.role ?? ROLES.USER)
     }
     catch {
-      reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
+      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
+    }
+
+    const payload = request.user as { sub?: string, id?: string }
+    const userId = payload.sub ?? payload.id
+    if (!userId)
+      return
+
+    // ponytail: add Redis cache when DB query becomes a bottleneck
+    const userRoleRows = await request.server.db.query.userRoles.findMany({
+      where: eq(userRoles.userId, userId),
+      with: {
+        role: { with: { rolePermissions: { with: { permission: true } } } },
+      },
+    })
+
+    const isSuperAdmin = userRoleRows.some(r => r.role.isSystemRole)
+    const permissions = [
+      ...new Set(
+        userRoleRows.flatMap(r =>
+          r.role.rolePermissions.map(rp =>
+            `${rp.permission.resource}:${rp.permission.action}:${rp.permission.scope}`,
+          ),
+        ),
+      ),
+    ]
+
+    request.requestContext.set('userId', userId)
+    request.requestContext.set('permissions', permissions)
+    request.requestContext.set('isSuperAdmin', isSuperAdmin)
+  })
+
+  // ponytail: remove once all routes use requirePermission
+  fastify.decorate('requireAdmin', async (request: FastifyRequest, reply: FastifyReply) => {
+    const isSuperAdmin = request.requestContext.get('isSuperAdmin') ?? false
+    const perms = request.requestContext.get('permissions') ?? []
+    if (!isSuperAdmin && !perms.includes('role:read:any')) {
+      return reply.status(403).send({ success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } })
     }
   })
 
-  // Must run after `authenticate` in the preValidation chain.
-  fastify.decorate('requireAdmin', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (request.requestContext.get('role') !== ROLES.ADMIN) {
-      reply.status(403).send({ success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } })
+  fastify.decorate('requirePermission', (permission: string) => {
+    return async (request: FastifyRequest, reply: FastifyReply) => {
+      if (request.requestContext.get('isSuperAdmin'))
+        return
+      const perms = request.requestContext.get('permissions') ?? []
+      if (!perms.includes(permission)) {
+        return reply.status(403).send({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } })
+      }
     }
   })
 }
