@@ -16,17 +16,20 @@ export default createFastifyRpcPlugin(rolesSchema, {
 
   create: async ({ body, request }) => {
     const data = await roleService.createRole(request.server.db, body)
+    logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'role.created', resourceType: 'role', resourceId: data.id })
     return { status: 201 as const, body: { success: true as const, data } }
   },
 
   update: async ({ params, body, request }) => {
     const isSuperAdmin = request.requestContext.get('isSuperAdmin') ?? false
     const data = await roleService.updateRole(request.server.db, params.id, body, isSuperAdmin)
+    logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'role.updated', resourceType: 'role', resourceId: data.id })
     return { status: 200 as const, body: { success: true as const, data } }
   },
 
   delete: async ({ params, request }) => {
     await roleService.deleteRole(request.server.db, params.id)
+    logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'role.deleted', resourceType: 'role', resourceId: params.id })
     return { status: 204 as const, body: null }
   },
 

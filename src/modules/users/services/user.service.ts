@@ -125,6 +125,15 @@ export async function updateUser(db: Db, id: string, body: UpdateUserBody) {
 
 export async function deleteUser(db: Db, id: string, deletedBy?: string) {
   await findUserById(db, id)
+  const superAdminRole = await db.query.roles.findFirst({ where: eq(roles.name, ROLES.SUPER_ADMIN) })
+  if (superAdminRole) {
+    const userHasRole = await db.query.userRoles.findFirst({ where: and(eq(userRoles.userId, id), eq(userRoles.roleId, superAdminRole.id)) })
+    if (userHasRole) {
+      const [{ total }] = await db.select({ total: count() }).from(userRoles).innerJoin(users, eq(users.id, userRoles.userId)).where(and(eq(userRoles.roleId, superAdminRole.id), isNull(users.deletedAt)))
+      if (total <= 1)
+        throw new ForbiddenError('Cannot delete the last super-admin')
+    }
+  }
   await db.delete(userRoles).where(eq(userRoles.userId, id))
   await db.update(users).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(users.id, id))
 }
