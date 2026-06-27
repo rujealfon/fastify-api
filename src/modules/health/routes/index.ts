@@ -43,6 +43,8 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
           }),
           underPressure: z.boolean(),
         })),
+        401: apiErrorSchema,
+        403: apiErrorSchema,
       },
     },
     preValidation: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.AUDIT_LOG.READ_ANY)],

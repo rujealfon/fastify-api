@@ -88,7 +88,16 @@ export async function buildApp() {
     if (error instanceof AppError) {
       return reply.status(error.statusCode).send(error.toJSON())
     }
-    const err = error as Error & { validation?: Array<Record<string, unknown>> }
+    const err = error as Error & { statusCode?: number, validation?: Array<Record<string, unknown>> }
+    if (err.statusCode === 429) {
+      return reply.status(429).send({
+        success: false,
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: err.message || 'Rate limit exceeded',
+        },
+      })
+    }
     if (err.validation) {
       return reply.status(400).send({
         success: false,
