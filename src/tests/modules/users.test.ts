@@ -338,6 +338,7 @@ describe('users API', () => {
       const { data } = res.json<{ data: User }>()
       expect(data.email).toBe('after@example.com')
       expect(data.profile).toBeDefined()
+      expect(Array.isArray(data.roles)).toBe(true)
     })
 
     it('returns 404 for unknown id', async () => {

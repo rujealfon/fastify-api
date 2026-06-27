@@ -11,8 +11,8 @@ export const profileSchema = z.object({
 })
 
 export const embeddedRoleSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
+  id: z.uuid().meta({ examples: ['019ee4e4-bd7d-7e0d-8402-eeb73c578a01'] }),
+  name: z.string().meta({ examples: ['admin'] }),
 })
 
 export const userSchema = z.object({
