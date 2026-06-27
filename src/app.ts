@@ -22,6 +22,7 @@ import dbPlugin from './plugins/db.js'
 import helmetPlugin from './plugins/helmet.js'
 import jwtPlugin from './plugins/jwt.js'
 import metricsPlugin from './plugins/metrics.js'
+import mobileAuthPlugin from './plugins/mobile-auth.js'
 import multipartPlugin from './plugins/multipart.js'
 import rateLimitPlugin from './plugins/rate-limit.js'
 import redisPlugin from './plugins/redis.js'
@@ -77,6 +78,7 @@ export async function buildApp() {
 
   // Auth
   await fastify.register(jwtPlugin)
+  await fastify.register(mobileAuthPlugin)
   await fastify.register(authDecorator)
   await fastify.register(requestIdHook)
 

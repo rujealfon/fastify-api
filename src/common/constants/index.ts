@@ -39,4 +39,7 @@ export const PERMISSIONS = {
   METRICS: {
     READ_ANY: 'metrics:read:any',
   },
+  HEALTH: {
+    READ_DETAILS: 'health:read:details',
+  },
 } as const

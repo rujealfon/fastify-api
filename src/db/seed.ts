@@ -31,11 +31,13 @@ const SEED_PERMISSIONS = [
   { resource: 'product', action: 'delete', scope: 'any' },
   { resource: 'audit-log', action: 'read', scope: 'any' },
   { resource: 'metrics', action: 'read', scope: 'any' },
+  { resource: 'health', action: 'read', scope: 'details' },
 ]
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   'super-admin': SEED_PERMISSIONS.map(p => `${p.resource}:${p.action}:${p.scope}`),
   'admin': [
+    'health:read:details',
     'user:create:any',
     'user:read:any',
     'user:update:any',
