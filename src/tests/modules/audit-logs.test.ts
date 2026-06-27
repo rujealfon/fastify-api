@@ -1,18 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, registerAdminAndLogin, registerAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
-
-const delay = () => new Promise<void>(r => setTimeout(r, 50))
-
-async function eventually<T>(read: () => Promise<T>, done: (value: T) => boolean) {
-  for (let i = 0; i < 10; i++) {
-    const value = await read()
-    if (done(value))
-      return value
-    await delay()
-  }
-  return read()
-}
+import { createTestApp, eventually, registerAdminAndLogin, registerAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 describe('audit logs API', () => {
   let app: FastifyInstance

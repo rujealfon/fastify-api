@@ -89,7 +89,7 @@ function buildNsClient<T extends RouteMap>(
         'Content-Type': 'application/json',
         ...input?.headers,
       }
-      if (getToken && route.auth) {
+      if (getToken && (route.auth || route.optionalAuth)) {
         const token = getToken()
         if (token)
           headers.Authorization = `Bearer ${token}`

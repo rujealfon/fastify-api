@@ -38,7 +38,8 @@ export default createFastifyRpcPlugin(authSchema, {
   },
 
   logout: async ({ request, reply }) => {
-    logAudit(request.server.db, { userId: request.requestContext.get('userId') ?? null, action: 'auth.logged_out', resourceType: 'user', metadata: { ip: request.ip, ua: request.headers['user-agent'] ?? null } })
+    const userId = request.requestContext.get('userId') ?? null
+    logAudit(request.server.db, { userId, action: 'auth.logged_out', resourceType: userId ? 'user' : 'anonymous', resourceId: userId, metadata: { ip: request.ip, ua: request.headers['user-agent'] ?? null } })
     reply.clearCookie('token', { path: '/' })
     return { status: 200 as const, body: { success: true as const, data: null } }
   },

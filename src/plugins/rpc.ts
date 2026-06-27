@@ -34,6 +34,8 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
       const preValidation = []
       if (route.auth || route.permission)
         preValidation.push(fastify.authenticate)
+      else if (route.optionalAuth)
+        preValidation.push(fastify.optionalAuthenticate)
       if (route.permission)
         preValidation.push(fastify.requirePermission(route.permission))
 
@@ -43,6 +45,7 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
         schema: {
           ...(route.tags !== undefined && { tags: route.tags }),
           ...((route.auth || route.permission) && { security: [{ cookieAuth: [] }, { bearerAuth: [] }] }),
+          ...(route.optionalAuth && !(route.auth || route.permission) && { security: [{}, { cookieAuth: [] }, { bearerAuth: [] }] }),
           ...(route.query !== undefined && { querystring: route.query }),
           ...(route.params !== undefined && { params: route.params }),
           ...(route.body !== undefined && { body: route.body }),
