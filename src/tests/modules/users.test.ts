@@ -1,29 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
-
-interface Profile {
-  firstName: string | null
-  lastName: string | null
-  avatarUrl: string | null
-  bio: string | null
-  phoneNumber: string | null
-  birthDate: string | null
-}
-
-interface Role {
-  id: string
-  name: string
-}
-
-interface User {
-  id: string
-  email: string
-  profile: Profile
-  roles: Role[]
-  createdAt: string
-  updatedAt: string
-}
+import type { User } from '@/modules/users/schemas/index.js'
 
 describe('users API', () => {
   let app: FastifyInstance
