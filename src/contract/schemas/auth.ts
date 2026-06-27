@@ -13,6 +13,7 @@ export const authSchema = {
     method: 'POST' as const,
     path: '/api/v1/auth/register',
     tags: ['Auth'],
+    rateLimit: { max: 5, timeWindow: '15 minutes' },
     body: registerBodySchema,
     responses: {
       201: apiSuccessSchema(authUserSchema),
@@ -23,6 +24,7 @@ export const authSchema = {
     method: 'POST' as const,
     path: '/api/v1/auth/login',
     tags: ['Auth'],
+    rateLimit: { max: 5, timeWindow: '15 minutes' },
     body: loginBodySchema,
     responses: {
       200: apiSuccessSchema(authUserSchema),
@@ -33,6 +35,7 @@ export const authSchema = {
     method: 'POST' as const,
     path: '/api/v1/auth/mobile/login',
     tags: ['Auth'],
+    rateLimit: { max: 5, timeWindow: '15 minutes' },
     body: loginBodySchema,
     responses: {
       200: apiSuccessSchema(loginResponseSchema),

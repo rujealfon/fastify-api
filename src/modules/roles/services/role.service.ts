@@ -51,7 +51,10 @@ export async function updateRole(db: Db, id: string, body: UpdateRoleBody, calle
   if (existing.isSystemRole && body.name !== undefined && body.name !== existing.name)
     throw new ForbiddenError('System role names cannot be changed')
   try {
-    const [row] = await db.update(roles).set(body).where(eq(roles.id, id)).returning()
+    const [row] = await db.update(roles).set({
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.description !== undefined && { description: body.description }),
+    }).where(eq(roles.id, id)).returning()
     if (!row)
       throw new NotFoundError('Role', id)
     return toRole(row)

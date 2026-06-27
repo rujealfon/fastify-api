@@ -6,7 +6,7 @@ import { permissions, rolePermissions, roles } from '@/db/schema/index.js'
 
 const SEED_ROLES = [
   { name: 'super-admin', description: 'Full system access', isSystemRole: true },
-  { name: 'admin', description: 'Administrative access', isSystemRole: false },
+  { name: 'admin', description: 'Administrative access', isSystemRole: true },
   { name: 'user', description: 'Standard user access', isSystemRole: false },
 ]
 
@@ -25,6 +25,10 @@ const SEED_PERMISSIONS = [
   { resource: 'permission', action: 'read', scope: 'any' },
   { resource: 'permission', action: 'update', scope: 'any' },
   { resource: 'permission', action: 'delete', scope: 'any' },
+  { resource: 'product', action: 'read', scope: 'any' },
+  { resource: 'product', action: 'create', scope: 'any' },
+  { resource: 'product', action: 'update', scope: 'any' },
+  { resource: 'product', action: 'delete', scope: 'any' },
   { resource: 'audit-log', action: 'read', scope: 'any' },
 ]
 
@@ -39,9 +43,13 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'user:update:own',
     'role:read:any',
     'permission:read:any',
+    'product:read:any',
+    'product:create:any',
+    'product:update:any',
+    'product:delete:any',
     'audit-log:read:any',
   ],
-  'user': ['user:read:own', 'user:update:own'],
+  'user': ['user:read:own', 'user:update:own', 'product:read:any'],
 }
 
 export async function seedRoles(db: Db) {

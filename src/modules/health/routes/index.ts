@@ -31,6 +31,7 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
     schema: {
       tags: ['Health'],
       summary: 'System details — memory, event loop, pressure status',
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }],
       response: {
         200: apiSuccessSchema(z.object({
           status: z.string(),
@@ -42,8 +43,10 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
           }),
           underPressure: z.boolean(),
         })),
+        401: apiErrorSchema,
       },
     },
+    preValidation: [fastify.authenticate],
     handler: controller.details,
   })
 }

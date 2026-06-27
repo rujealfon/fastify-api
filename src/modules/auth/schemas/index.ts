@@ -2,7 +2,9 @@ import { z } from 'zod'
 
 export const registerBodySchema = z.object({
   email: z.email().meta({ examples: ['alice@example.com'] }),
-  password: z.string().min(8).max(72).meta({ examples: ['securepassword123'] }),
+  password: z.string().min(8).max(72)
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number')
+    .meta({ examples: ['SecurePassword1'] }),
 })
 
 export const loginBodySchema = z.object({

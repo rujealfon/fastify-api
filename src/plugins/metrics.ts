@@ -17,6 +17,7 @@ const metricsPlugin: FastifyPluginAsync = async (fastify) => {
 
   fastify.get('/metrics', {
     schema: { hide: true },
+    preValidation: [fastify.authenticate],
     handler: async (_request, reply) => {
       reply.header('Content-Type', registry.contentType)
       return registry.metrics()

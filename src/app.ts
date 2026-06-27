@@ -65,8 +65,8 @@ export async function buildApp() {
 
   // Data layer
   await fastify.register(redisPlugin)
-  await fastify.register(rateLimitPlugin)
   await fastify.register(dbPlugin)
+  await fastify.register(rateLimitPlugin)
 
   // Reliability
   await fastify.register(underPressurePlugin)
@@ -75,13 +75,13 @@ export async function buildApp() {
   await fastify.register(multipartPlugin)
   await fastify.register(requestContextPlugin)
 
-  // Observability
-  await fastify.register(metricsPlugin)
-
   // Auth
   await fastify.register(jwtPlugin)
   await fastify.register(authDecorator)
   await fastify.register(requestIdHook)
+
+  // Observability — registered after auth so fastify.authenticate is available
+  await fastify.register(metricsPlugin)
 
   // Global error handler
   fastify.setErrorHandler((error, request, reply) => {

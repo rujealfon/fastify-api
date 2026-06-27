@@ -7,13 +7,18 @@ import { ConflictError, UnauthorizedError } from '@/common/errors/AppError.js'
 import { profiles, roles, userRoles, users } from '@/db/schema/index.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
 
+// Constant-time dummy hash used to normalize timing when no dead account exists,
+// preventing a timing oracle that distinguishes "email never registered" from
+// "email soft-deleted" via the presence/absence of a bcrypt comparison.
+const DUMMY_HASH = '$2b$12$Dn0etVDxKuYEzAYFGnb4hO3dJ3P1bLnRMOqFqDjNYr2JHM1vvD7Ui'
+
 export async function registerUser(db: Db, body: RegisterBody) {
   // An email may have at most one active row but several soft-deleted rows
   // (the partial unique index only covers deletedAt IS NULL), so the conflict
   // check must be scoped to active rows specifically.
   const active = await db.query.users.findFirst({ where: and(eq(users.email, body.email), isNull(users.deletedAt)) })
   if (active)
-    throw new ConflictError(`Email '${body.email}' is already registered`)
+    throw new ConflictError('An account with this email already exists')
 
   // Reactivate a soft-deleted account if the password matches (within the 90-day
   // window before the cleanup cron hard-deletes it). Profile row still exists, so
@@ -25,11 +30,14 @@ export async function registerUser(db: Db, body: RegisterBody) {
       const [userRole] = await db.select({ id: roles.id }).from(roles).where(eq(roles.name, 'user')).limit(1)
       if (userRole)
         await db.insert(userRoles).values({ userId: dead.id, roleId: userRole.id }).onConflictDoNothing()
-      logAudit(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id, metadata: { email: dead.email } })
+      logAudit(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id })
       return { id: dead.id, email: dead.email }
     }
-    throw new ConflictError(`Email '${body.email}' is already registered`)
+    throw new ConflictError('An account with this email already exists')
   }
+
+  // Normalize timing vs the dead-account path above.
+  await bcrypt.compare(body.password, DUMMY_HASH)
 
   const passwordHash = await bcrypt.hash(body.password, 12)
 
@@ -49,7 +57,7 @@ export async function registerUser(db: Db, body: RegisterBody) {
 
       return row
     })
-    logAudit(db, { userId: user.id, action: 'auth.registered', resourceType: 'user', resourceId: user.id, metadata: { email: user.email } })
+    logAudit(db, { userId: user.id, action: 'auth.registered', resourceType: 'user', resourceId: user.id })
     return user
   }
   catch (err) {
@@ -57,7 +65,7 @@ export async function registerUser(db: Db, body: RegisterBody) {
     // check above; the partial unique index rejects the loser with 23505.
     const pgCode = (err as { cause?: { code?: string } })?.cause?.code
     if (pgCode === PG_UNIQUE_VIOLATION)
-      throw new ConflictError(`Email '${body.email}' is already registered`)
+      throw new ConflictError('An account with this email already exists')
     throw err
   }
 }

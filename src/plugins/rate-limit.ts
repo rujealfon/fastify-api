@@ -3,8 +3,9 @@ import rateLimit from '@fastify/rate-limit'
 import fp from 'fastify-plugin'
 
 const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
-  // Skip in dev — hot reloads would exhaust the window constantly.
-  if (fastify.config.NODE_ENV === 'development')
+  // Skip only in test — rate limits would break integration tests that hit
+  // auth endpoints many times and use real Redis with shared counters.
+  if (fastify.config.NODE_ENV === 'test')
     return
 
   await fastify.register(rateLimit, {
@@ -12,10 +13,13 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
     timeWindow: '15 minutes',
     allowList: ['127.0.0.1'],
     redis: fastify.redis,
-    // x-forwarded-for first so clients behind a reverse proxy are keyed by
-    // their real IP, not the proxy's. allowList is the real spoofing defence.
+    // Parse the leftmost entry from x-forwarded-for so clients behind a trusted
+    // reverse proxy are keyed by their real IP. Do not trust the full header
+    // string as a key — a single client can send multiple IPs in the chain.
     keyGenerator: (request) => {
-      return request.headers['x-forwarded-for'] as string ?? request.ip
+      const xff = request.headers['x-forwarded-for']
+      const raw = Array.isArray(xff) ? xff[0] : xff
+      return raw?.split(',')[0]?.trim() ?? request.ip
     },
   })
 }

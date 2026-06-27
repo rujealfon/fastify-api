@@ -16,6 +16,7 @@ export interface AppConfig {
   COOKIE_SECRET: string
   OTEL_ENDPOINT: string
   MOBILE_API_KEY: string
+  CORS_ORIGIN: string
 }
 
 export const configSchema = {
@@ -37,5 +38,6 @@ export const configSchema = {
     COOKIE_SECRET: { type: 'string', default: '' },
     OTEL_ENDPOINT: { type: 'string', default: '' },
     MOBILE_API_KEY: { type: 'string' },
+    CORS_ORIGIN: { type: 'string', default: '' },
   },
 } as const
