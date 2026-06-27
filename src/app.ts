@@ -1,3 +1,4 @@
+import type { FastifyServerOptions } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import process from 'node:process'
 import envPlugin from '@fastify/env'
@@ -30,8 +31,36 @@ import scalarPlugin from './plugins/scalar.js'
 import sensiblePlugin from './plugins/sensible.js'
 import underPressurePlugin from './plugins/under-pressure.js'
 
+type TrustProxyConfig = FastifyServerOptions['trustProxy']
+
+const DEFAULT_PRODUCTION_TRUST_PROXY = ['127.0.0.1', '::1']
+
+function parseTrustProxy(value = process.env.TRUST_PROXY, nodeEnv = process.env.NODE_ENV): TrustProxyConfig {
+  if (value === undefined || value.trim() === '') {
+    return nodeEnv === 'production' ? DEFAULT_PRODUCTION_TRUST_PROXY : false
+  }
+
+  const normalized = value.trim().toLowerCase()
+
+  if (normalized === 'true')
+    return true
+
+  if (normalized === 'false')
+    return false
+
+  const hopCount = Number.parseInt(normalized, 10)
+  if (String(hopCount) === normalized && hopCount >= 0)
+    return hopCount
+
+  return value
+    .split(',')
+    .map(proxy => proxy.trim())
+    .filter(Boolean)
+}
+
 export async function buildApp() {
   const fastify = Fastify({
+    trustProxy: parseTrustProxy(),
     logger: {
       level: process.env.LOG_LEVEL ?? 'info',
       transport:

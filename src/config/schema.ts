@@ -17,6 +17,7 @@ export interface AppConfig {
   OTEL_ENDPOINT: string
   MOBILE_API_KEY: string
   CORS_ORIGINS: string
+  TRUST_PROXY: string
 }
 
 export const configSchema = {
@@ -39,5 +40,6 @@ export const configSchema = {
     OTEL_ENDPOINT: { type: 'string', default: '' },
     MOBILE_API_KEY: { type: 'string', minLength: 32 },
     CORS_ORIGINS: { type: 'string', default: '' },
+    TRUST_PROXY: { type: 'string', default: '' },
   },
 } as const
