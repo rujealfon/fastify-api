@@ -22,6 +22,10 @@ const profileColumns = {
   birthDate: true,
 } as const
 
+const userRolesRelation = {
+  with: { role: { columns: { id: true, name: true } } },
+} as const
+
 interface UserRow {
   id: string
   email: string
@@ -60,7 +64,7 @@ export async function findAllUsers(db: Db, page: number, limit: number) {
   const [rows, [{ total }]] = await Promise.all([
     db.query.users.findMany({
       columns: userColumns,
-      with: { profile: { columns: profileColumns }, userRoles: { with: { role: { columns: { id: true, name: true } } } } },
+      with: { profile: { columns: profileColumns }, userRoles: userRolesRelation },
       where: isNull(users.deletedAt),
       offset: (page - 1) * limit,
       limit,
@@ -73,7 +77,7 @@ export async function findAllUsers(db: Db, page: number, limit: number) {
 export async function findUserById(db: Db, id: string) {
   const row = await db.query.users.findFirst({
     columns: userColumns,
-    with: { profile: { columns: profileColumns }, userRoles: { with: { role: { columns: { id: true, name: true } } } } },
+    with: { profile: { columns: profileColumns }, userRoles: userRolesRelation },
     where: and(eq(users.id, id), isNull(users.deletedAt)),
   })
   if (!row)
