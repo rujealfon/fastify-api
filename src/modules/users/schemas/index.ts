@@ -10,10 +10,16 @@ export const profileSchema = z.object({
   birthDate: z.string().nullable().meta({ examples: ['1990-01-15'] }),
 })
 
+export const roleSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+})
+
 export const userSchema = z.object({
   id: z.uuid().meta({ examples: ['019ee4e4-bd7d-7e0d-8402-eeb73c578a00'] }),
   email: z.email().meta({ examples: ['user@example.com'] }),
   profile: profileSchema,
+  roles: z.array(roleSchema),
   createdAt: z.iso.datetime().meta({ examples: ['2024-01-15T10:30:00.000Z'] }),
   updatedAt: z.iso.datetime().meta({ examples: ['2024-01-15T10:30:00.000Z'] }),
 })

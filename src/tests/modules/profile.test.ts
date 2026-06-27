@@ -39,6 +39,8 @@ describe('profile API', () => {
       expect(data).toHaveProperty('id')
       expect(data.email).toBe('test@example.com')
       expect(data).toHaveProperty('profile')
+      expect(data).toHaveProperty('roles')
+      expect(data.roles).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'user' })]))
       expect(data).toHaveProperty('createdAt')
       expect(data).toHaveProperty('updatedAt')
       expect(data).not.toHaveProperty('passwordHash')
