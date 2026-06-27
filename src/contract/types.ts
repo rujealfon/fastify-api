@@ -13,6 +13,8 @@ export interface RouteSchema<
   auth?: boolean
   optionalAuth?: boolean
   permission?: string
+  tags?: string[]
+  rateLimit?: { max: number, timeWindow: string }
   query?: TQuery
   params?: TParams
   body?: TBody
