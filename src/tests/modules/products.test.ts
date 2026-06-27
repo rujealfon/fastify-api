@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
+import { createTestApp, registerAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 describe('products API', () => {
   let app: FastifyInstance
@@ -12,7 +12,7 @@ describe('products API', () => {
 
   beforeEach(async () => {
     await resetDb(app)
-    token = await registerAndLogin(app)
+    token = await registerAdminAndLogin(app)
   })
 
   afterAll(async () => {

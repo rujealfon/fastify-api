@@ -1,1 +1,2 @@
-UPDATE "roles" SET "is_system_role" = true WHERE "name" = 'admin';
+-- no-op: admin role is not a system role; only super-admin is
+SELECT 1;

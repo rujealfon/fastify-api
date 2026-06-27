@@ -6,7 +6,7 @@ import { permissions, rolePermissions, roles } from '@/db/schema/index.js'
 
 const SEED_ROLES = [
   { name: 'super-admin', description: 'Full system access', isSystemRole: true },
-  { name: 'admin', description: 'Administrative access', isSystemRole: true },
+  { name: 'admin', description: 'Administrative access', isSystemRole: false },
   { name: 'user', description: 'Standard user access', isSystemRole: false },
 ]
 
