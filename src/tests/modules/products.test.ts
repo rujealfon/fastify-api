@@ -87,7 +87,7 @@ describe('products API', () => {
     expect(del.statusCode).toBe(204)
   })
 
-  describe('RBAC: regular user role', () => {
+  describe('regular user role :RBAC', () => {
     let userToken: string
 
     beforeEach(async () => {
