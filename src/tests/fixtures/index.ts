@@ -79,5 +79,15 @@ export async function eventually<T>(read: () => Promise<T>, done: (value: T) => 
       return value
     await delay()
   }
-  return read()
+  throw new Error('eventually: condition never satisfied after 10 retries')
+}
+
+export async function registerAndLoginWithUser(
+  app: Awaited<ReturnType<typeof createTestApp>>,
+  user = { email: 'test@example.com', password: 'password123' },
+) {
+  const registerRes = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: user })
+  const { data } = registerRes.json<{ data: { id: string, email: string } }>()
+  const loginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: user })
+  return { user: data, token: extractTokenFromCookie(loginRes.headers['set-cookie']) }
 }

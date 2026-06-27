@@ -7,6 +7,7 @@ import { userRoles, users } from '@/db/schema/index.js'
 declare module 'fastify' {
   interface FastifyInstance {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    optionalAuthenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
     requirePermission: (permission: string) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>
   }
 }
@@ -52,6 +53,31 @@ const authDecorator: FastifyPluginAsync = async (fastify) => {
       ),
     ]
 
+    request.requestContext.set('userId', userId)
+    request.requestContext.set('permissions', permissions)
+    request.requestContext.set('isSuperAdmin', isSuperAdmin)
+  })
+
+  fastify.decorate('optionalAuthenticate', async (request: FastifyRequest, _reply: FastifyReply) => {
+    try {
+      await request.jwtVerify()
+    }
+    catch {
+      return
+    }
+    const payload = request.user as { sub?: string, id?: string }
+    const userId = payload.sub ?? payload.id
+    if (!userId)
+      return
+    const [activeUser] = await request.server.db.select({ id: users.id }).from(users).where(and(eq(users.id, userId), isNull(users.deletedAt))).limit(1)
+    if (!activeUser)
+      return
+    const userRoleRows = await request.server.db.query.userRoles.findMany({
+      where: eq(userRoles.userId, userId),
+      with: { role: { with: { rolePermissions: { with: { permission: true } } } } },
+    })
+    const isSuperAdmin = userRoleRows.some(r => r.role.name === ROLES.SUPER_ADMIN)
+    const permissions = [...new Set(userRoleRows.flatMap(r => r.role.rolePermissions.map(rp => `${rp.permission.resource}:${rp.permission.action}:${rp.permission.scope}`)))]
     request.requestContext.set('userId', userId)
     request.requestContext.set('permissions', permissions)
     request.requestContext.set('isSuperAdmin', isSuperAdmin)
