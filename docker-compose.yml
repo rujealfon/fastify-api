@@ -17,16 +17,16 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:8-alpine
-    container_name: fastify_redis
-    command: redis-server --save 60 1 --loglevel warning
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: fastify_valkey
+    command: valkey-server --save 60 1 --loglevel warning
     ports:
       - '6379:6379'
     volumes:
-      - redis_data:/data
+      - valkey_data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ['CMD', 'valkey-cli', 'ping']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -41,7 +41,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      valkey:
         condition: service_healthy
     environment:
       PORT: 3000
@@ -50,7 +50,7 @@ services:
       DATABASE_URL: postgres://postgres:password@postgres:5432/fastify_dev
       TEST_DATABASE_URL: postgres://postgres:password@postgres:5432/fastify_test
       JWT_SECRET: change_this_to_a_random_string_at_least_32_characters
-      REDIS_URL: redis://redis:6379
+      VALKEY_URL: redis://valkey:6379
       COOKIE_SECRET: ''
       OTEL_ENDPOINT: ''
       LOG_LEVEL: info
@@ -92,14 +92,14 @@ services:
   #   depends_on:
   #     postgres:
   #       condition: service_healthy
-  #     redis:
+  #     valkey:
   #       condition: service_healthy
   #   environment:
   #     HOST: 0.0.0.0
   #     NODE_ENV: production
   #     DATABASE_URL: postgres://postgres:password@postgres:5432/fastify_dev
   #     JWT_SECRET: change_this_to_a_random_string_at_least_32_characters
-  #     REDIS_URL: redis://redis:6379
+  #     VALKEY_URL: redis://valkey:6379
   #   ports:
   #     - '8000:8000'
 
@@ -133,4 +133,4 @@ services:
 volumes:
   postgres18_data:
   pgadmin_data:
-  redis_data:
+  valkey_data:

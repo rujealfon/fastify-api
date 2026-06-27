@@ -62,7 +62,7 @@ is a Nit, open the summary with "No blocking issues found."
 
 ### Services
 - Service functions contain no Fastify imports (`FastifyRequest`,
-  `FastifyReply`, decorators, `request.server`). Dependencies (`db`, `redis`,
+  `FastifyReply`, decorators, `request.server`). Dependencies (`db`, `valkey`,
   primitive values) are injected as parameters.
 - No import from `src/plugins/` or `src/modules/` inside a service.
 
@@ -76,9 +76,9 @@ is a Nit, open the summary with "No blocking issues found."
   equivalent check).
 - IDs generated at the application layer use `uuidv7`.
 
-### Redis
-- Redis is accessed through `fastify.redis` (the `@fastify/redis` instance).
-  No standalone `ioredis` clients are instantiated.
+### Valkey
+- Valkey is accessed through `fastify.valkey` (the shared Valkey GLIDE instance).
+  No standalone Valkey clients are instantiated.
 
 ### Error handling
 - Domain errors extend `AppError` (`ConflictError`, `NotFoundError`,
@@ -100,7 +100,7 @@ is a Nit, open the summary with "No blocking issues found."
 ## Plugin registration order
 
 Flag as Important if the registration order in `app.ts` is changed. The
-required order is: `env` → `db` → `redis` → `rate-limit` → `helmet` → `cors`
+required order is: `env` → `db` → `valkey` → `rate-limit` → `helmet` → `cors`
 → `cookie` → `jwt` → `request-context` → auth decorators → routes.
 
 ## Verification bar

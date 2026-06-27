@@ -25,7 +25,7 @@ async function verifyAndGetUserId(request: FastifyRequest): Promise<string | nul
   if (!userId)
     return null
 
-  // ponytail: add Redis cache when DB query becomes a bottleneck
+  // ponytail: add Valkey cache when DB query becomes a bottleneck
   const [activeUser] = await request.server.db
     .select({ id: users.id })
     .from(users)
@@ -36,7 +36,7 @@ async function verifyAndGetUserId(request: FastifyRequest): Promise<string | nul
 }
 
 async function loadPermissions(request: FastifyRequest, userId: string): Promise<void> {
-  // ponytail: add Redis cache when DB query becomes a bottleneck
+  // ponytail: add Valkey cache when DB query becomes a bottleneck
   const userRoleRows = await request.server.db.query.userRoles.findMany({
     where: eq(userRoles.userId, userId),
     with: {

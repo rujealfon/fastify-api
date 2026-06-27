@@ -1,4 +1,4 @@
-import type { Redis } from 'ioredis'
+import type { GlideClient } from '@valkey/valkey-glide'
 import type { Db } from '@/db/index.js'
 import { sql } from 'drizzle-orm'
 
@@ -12,9 +12,9 @@ export async function checkDb(db: Db): Promise<boolean> {
   }
 }
 
-export async function checkRedis(redis: Redis): Promise<boolean> {
+export async function checkValkey(valkey: GlideClient): Promise<boolean> {
   try {
-    const result = await redis.ping()
+    const result = await valkey.ping()
     return result === 'PONG'
   }
   catch {
