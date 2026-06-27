@@ -1,11 +1,11 @@
 -- Backfill product permissions for databases that already ran seedRoles before
 -- product routes started enforcing product:* permissions.
-INSERT INTO "permissions" ("id", "resource", "action", "scope")
+INSERT INTO "permissions" ("id", "resource", "action", "scope", "description")
 VALUES
-  (gen_random_uuid(), 'product', 'create', 'any'),
-  (gen_random_uuid(), 'product', 'read', 'any'),
-  (gen_random_uuid(), 'product', 'update', 'any'),
-  (gen_random_uuid(), 'product', 'delete', 'any')
+  (gen_random_uuid(), 'product', 'create', 'any', 'Create any product'),
+  (gen_random_uuid(), 'product', 'read', 'any', 'Read any product'),
+  (gen_random_uuid(), 'product', 'update', 'any', 'Update any product'),
+  (gen_random_uuid(), 'product', 'delete', 'any', 'Delete any product')
 ON CONFLICT ("resource", "action", "scope") DO NOTHING;
 --> statement-breakpoint
 INSERT INTO "role_permissions" ("role_id", "permission_id")
