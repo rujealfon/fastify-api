@@ -57,6 +57,13 @@
       "when": 1782398877539,
       "tag": "0007_wet_victor_mancha",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782551463811,
+      "tag": "0008_backfill_product_permissions",
+      "breakpoints": true
     }
   ]
 }
