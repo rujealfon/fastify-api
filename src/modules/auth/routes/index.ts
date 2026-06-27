@@ -30,6 +30,8 @@ export default createFastifyRpcPlugin(authSchema, {
   },
 
   mobileLogin: async ({ body, request, reply }) => {
+    if (!request.server.config.MOBILE_API_KEY)
+      throw new ForbiddenError('Mobile login is restricted to mobile clients')
     // Hash both values to a fixed 32-byte digest before comparing so the
     // comparison is always constant-time and leaks neither key length nor content.
     const provided = createHash('sha256').update(request.headers['x-mobile-api-key'] as string ?? '').digest()

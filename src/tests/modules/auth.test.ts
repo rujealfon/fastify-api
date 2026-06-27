@@ -59,6 +59,15 @@ describe('auth API', () => {
       expect(res.statusCode).toBe(400)
     })
 
+    it('returns 400 for password meeting length but not complexity', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'alice@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(400)
+    })
+
     it('returns 400 for invalid email format', async () => {
       const res = await app.inject({
         method: 'POST',

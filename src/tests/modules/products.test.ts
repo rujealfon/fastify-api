@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, registerAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
+import { createTestApp, registerAdminAndLogin, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 describe('products API', () => {
   let app: FastifyInstance
@@ -85,5 +85,58 @@ describe('products API', () => {
       headers: { authorization: `Bearer ${token}` },
     })
     expect(del.statusCode).toBe(204)
+  })
+
+  describe('RBAC: regular user role', () => {
+    let userToken: string
+
+    beforeEach(async () => {
+      userToken = await registerAndLogin(app, { email: 'regular@example.com', password: 'Password123' })
+    })
+
+    it('returns 403 for POST /api/v1/products', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/products',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { name: 'Widget', price: 9.99, stock: 100 },
+      })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('returns 403 for PATCH /api/v1/products/:id', async () => {
+      const create = await app.inject({
+        method: 'POST',
+        url: '/api/v1/products',
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Gadget', price: 19.99, stock: 50 },
+      })
+      const { data: created } = create.json<{ data: { id: string } }>()
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/products/${created.id}`,
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { price: 24.99 },
+      })
+      expect(res.statusCode).toBe(403)
+    })
+
+    it('returns 403 for DELETE /api/v1/products/:id', async () => {
+      const create = await app.inject({
+        method: 'POST',
+        url: '/api/v1/products',
+        headers: { authorization: `Bearer ${token}` },
+        payload: { name: 'Doohickey', price: 4.99, stock: 10 },
+      })
+      const { data: created } = create.json<{ data: { id: string } }>()
+
+      const res = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/products/${created.id}`,
+        headers: { authorization: `Bearer ${userToken}` },
+      })
+      expect(res.statusCode).toBe(403)
+    })
   })
 })
