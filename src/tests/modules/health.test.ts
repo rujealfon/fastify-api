@@ -17,14 +17,14 @@ describe('health API', () => {
     await app.close()
   })
 
-  describe('GET /health/live', () => {
+  describe('get /health/live', () => {
     it('returns 200 without authentication', async () => {
       const res = await app.inject({ method: 'GET', url: '/health/live' })
       expect(res.statusCode).toBe(200)
     })
   })
 
-  describe('GET /health/details', () => {
+  describe('get /health/details', () => {
     it('returns 401 without a token', async () => {
       const res = await app.inject({ method: 'GET', url: '/health/details' })
       expect(res.statusCode).toBe(401)
