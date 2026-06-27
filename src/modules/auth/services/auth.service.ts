@@ -40,9 +40,6 @@ export async function registerUser(db: Db, body: RegisterBody) {
     throw new ConflictError('An account with this email already exists')
   }
 
-  // Normalize timing vs the dead-account path above.
-  await bcrypt.compare(body.password, DUMMY_HASH)
-
   const passwordHash = await bcrypt.hash(body.password, 12)
 
   try {
