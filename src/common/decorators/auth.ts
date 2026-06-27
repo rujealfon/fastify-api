@@ -12,75 +12,61 @@ declare module 'fastify' {
   }
 }
 
-const authDecorator: FastifyPluginAsync = async (fastify) => {
-  fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await request.jwtVerify()
-    }
-    catch {
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
-    }
+async function populateRequestContext(request: FastifyRequest): Promise<boolean> {
+  try {
+    await request.jwtVerify()
+  }
+  catch {
+    return false
+  }
 
-    const payload = request.user as { sub?: string, id?: string }
-    const userId = payload.sub ?? payload.id
-    if (!userId)
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
+  const payload = request.user as { sub?: string, id?: string }
+  const userId = payload.sub ?? payload.id
+  if (!userId)
+    return false
 
-    const [activeUser] = await request.server.db
-      .select({ id: users.id })
-      .from(users)
-      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
-      .limit(1)
-    if (!activeUser)
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
+  const [activeUser] = await request.server.db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .limit(1)
+  if (!activeUser)
+    return false
 
-    // ponytail: add Redis cache when DB query becomes a bottleneck
-    const userRoleRows = await request.server.db.query.userRoles.findMany({
-      where: eq(userRoles.userId, userId),
-      with: {
-        role: { with: { rolePermissions: { with: { permission: true } } } },
-      },
-    })
+  // ponytail: add Redis cache when DB query becomes a bottleneck
+  const userRoleRows = await request.server.db.query.userRoles.findMany({
+    where: eq(userRoles.userId, userId),
+    with: {
+      role: { with: { rolePermissions: { with: { permission: true } } } },
+    },
+  })
 
-    const isSuperAdmin = userRoleRows.some(r => r.role.name === ROLES.SUPER_ADMIN)
-    const permissions = [
-      ...new Set(
-        userRoleRows.flatMap(r =>
-          r.role.rolePermissions.map(rp =>
-            `${rp.permission.resource}:${rp.permission.action}:${rp.permission.scope}`,
-          ),
+  const isSuperAdmin = userRoleRows.some(r => r.role.name === ROLES.SUPER_ADMIN)
+  const permissions = [
+    ...new Set(
+      userRoleRows.flatMap(r =>
+        r.role.rolePermissions.map(rp =>
+          `${rp.permission.resource}:${rp.permission.action}:${rp.permission.scope}`,
         ),
       ),
-    ]
+    ),
+  ]
 
-    request.requestContext.set('userId', userId)
-    request.requestContext.set('permissions', permissions)
-    request.requestContext.set('isSuperAdmin', isSuperAdmin)
+  request.requestContext.set('userId', userId)
+  request.requestContext.set('permissions', permissions)
+  request.requestContext.set('isSuperAdmin', isSuperAdmin)
+  return true
+}
+
+const authDecorator: FastifyPluginAsync = async (fastify) => {
+  fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
+    const ok = await populateRequestContext(request)
+    if (!ok)
+      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
   })
 
   fastify.decorate('optionalAuthenticate', async (request: FastifyRequest, _reply: FastifyReply) => {
-    try {
-      await request.jwtVerify()
-    }
-    catch {
-      return
-    }
-    const payload = request.user as { sub?: string, id?: string }
-    const userId = payload.sub ?? payload.id
-    if (!userId)
-      return
-    const [activeUser] = await request.server.db.select({ id: users.id }).from(users).where(and(eq(users.id, userId), isNull(users.deletedAt))).limit(1)
-    if (!activeUser)
-      return
-    const userRoleRows = await request.server.db.query.userRoles.findMany({
-      where: eq(userRoles.userId, userId),
-      with: { role: { with: { rolePermissions: { with: { permission: true } } } } },
-    })
-    const isSuperAdmin = userRoleRows.some(r => r.role.name === ROLES.SUPER_ADMIN)
-    const permissions = [...new Set(userRoleRows.flatMap(r => r.role.rolePermissions.map(rp => `${rp.permission.resource}:${rp.permission.action}:${rp.permission.scope}`)))]
-    request.requestContext.set('userId', userId)
-    request.requestContext.set('permissions', permissions)
-    request.requestContext.set('isSuperAdmin', isSuperAdmin)
+    await populateRequestContext(request)
   })
 
   fastify.decorate('requirePermission', (permission: string) => {
