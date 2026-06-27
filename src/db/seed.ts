@@ -1,6 +1,7 @@
 import type { Db } from '@/db/index.js'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { PERMISSIONS } from '@/common/constants/index.js'
 import { createDb } from '@/db/index.js'
 import { permissions, rolePermissions, roles } from '@/db/schema/index.js'
 
@@ -35,21 +36,21 @@ const SEED_PERMISSIONS = [
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   'super-admin': SEED_PERMISSIONS.map(p => `${p.resource}:${p.action}:${p.scope}`),
   'admin': [
-    'user:create:any',
-    'user:read:any',
-    'user:update:any',
-    'user:delete:any',
-    'user:read:own',
-    'user:update:own',
-    'role:read:any',
-    'permission:read:any',
-    'audit-log:read:any',
-    'product:create:any',
-    'product:read:any',
-    'product:update:any',
-    'product:delete:any',
+    PERMISSIONS.USER.CREATE_ANY,
+    PERMISSIONS.USER.READ_ANY,
+    PERMISSIONS.USER.UPDATE_ANY,
+    PERMISSIONS.USER.DELETE_ANY,
+    PERMISSIONS.USER.READ_OWN,
+    PERMISSIONS.USER.UPDATE_OWN,
+    PERMISSIONS.ROLE.READ_ANY,
+    PERMISSIONS.PERMISSION.READ_ANY,
+    PERMISSIONS.AUDIT_LOG.READ_ANY,
+    PERMISSIONS.PRODUCT.CREATE_ANY,
+    PERMISSIONS.PRODUCT.READ_ANY,
+    PERMISSIONS.PRODUCT.UPDATE_ANY,
+    PERMISSIONS.PRODUCT.DELETE_ANY,
   ],
-  'user': ['user:read:own', 'user:update:own'],
+  'user': [PERMISSIONS.USER.READ_OWN, PERMISSIONS.USER.UPDATE_OWN],
 }
 
 export async function seedRoles(db: Db) {

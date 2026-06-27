@@ -1,6 +1,15 @@
 import type { z } from 'zod'
+import { PERMISSIONS } from '@/common/constants/index.js'
+
+export { PERMISSIONS }
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
+
+type ValueOf<T> = T[keyof T]
+
+export type PermissionName = {
+  [Group in keyof typeof PERMISSIONS]: ValueOf<typeof PERMISSIONS[Group]>
+}[keyof typeof PERMISSIONS]
 
 export interface RouteSchema<
   TQuery extends z.ZodType | undefined = undefined,
@@ -12,7 +21,7 @@ export interface RouteSchema<
   path: string
   auth?: boolean
   optionalAuth?: boolean
-  permission?: string
+  permission?: PermissionName
   rateLimit?: {
     max: number
     timeWindow: string
@@ -28,7 +37,7 @@ export type RouteMap = Record<string, {
   path: string
   auth?: boolean
   optionalAuth?: boolean
-  permission?: string
+  permission?: PermissionName
   rateLimit?: {
     max: number
     timeWindow: string

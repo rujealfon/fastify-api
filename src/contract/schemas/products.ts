@@ -1,5 +1,6 @@
 import type { RouteMap } from '@/contract/types.js'
 import { z } from 'zod'
+import { PERMISSIONS } from '@/contract/types.js'
 
 const paginationQuerySchema = z.object({ page: z.coerce.number().int().min(1).default(1), limit: z.coerce.number().int().min(1).max(100).default(10) })
 const uuidParamSchema = z.object({ id: z.uuid() })
@@ -25,9 +26,9 @@ const createProductBodySchema = z.object({ name: z.string().min(1).max(200), pri
 const updateProductBodySchema = z.object({ name: z.string().min(1).max(200).optional(), price: z.number().min(0).optional(), stock: z.number().int().min(0).optional() }).refine(data => Object.keys(data).length > 0, { message: 'At least one field must be provided' })
 
 export const productsSchema = {
-  list: { method: 'GET' as const, path: '/api/v1/products', tags: ['Products'], permission: 'product:read:any', query: paginationQuerySchema, responses: { 200: apiListSchema(productSchema), 401: apiErrorSchema, 403: apiErrorSchema } },
-  get: { method: 'GET' as const, path: '/api/v1/products/:id', tags: ['Products'], permission: 'product:read:any', params: uuidParamSchema, responses: { 200: apiSuccessSchema(productSchema), 401: apiErrorSchema, 403: apiErrorSchema, 404: apiErrorSchema } },
-  create: { method: 'POST' as const, path: '/api/v1/products', tags: ['Products'], permission: 'product:create:any', body: createProductBodySchema, responses: { 201: apiSuccessSchema(productSchema), 401: apiErrorSchema, 403: apiErrorSchema } },
-  update: { method: 'PATCH' as const, path: '/api/v1/products/:id', tags: ['Products'], permission: 'product:update:any', params: uuidParamSchema, body: updateProductBodySchema, responses: { 200: apiSuccessSchema(productSchema), 401: apiErrorSchema, 403: apiErrorSchema, 404: apiErrorSchema } },
-  delete: { method: 'DELETE' as const, path: '/api/v1/products/:id', tags: ['Products'], permission: 'product:delete:any', params: uuidParamSchema, responses: { 204: z.null(), 401: apiErrorSchema, 403: apiErrorSchema, 404: apiErrorSchema } },
+  list: { method: 'GET' as const, path: '/api/v1/products', tags: ['Products'], permission: PERMISSIONS.PRODUCT.READ_ANY, query: paginationQuerySchema, responses: { 200: apiListSchema(productSchema), 401: apiErrorSchema, 403: apiErrorSchema } },
+  get: { method: 'GET' as const, path: '/api/v1/products/:id', tags: ['Products'], permission: PERMISSIONS.PRODUCT.READ_ANY, params: uuidParamSchema, responses: { 200: apiSuccessSchema(productSchema), 401: apiErrorSchema, 403: apiErrorSchema, 404: apiErrorSchema } },
+  create: { method: 'POST' as const, path: '/api/v1/products', tags: ['Products'], permission: PERMISSIONS.PRODUCT.CREATE_ANY, body: createProductBodySchema, responses: { 201: apiSuccessSchema(productSchema), 401: apiErrorSchema, 403: apiErrorSchema } },
+  update: { method: 'PATCH' as const, path: '/api/v1/products/:id', tags: ['Products'], permission: PERMISSIONS.PRODUCT.UPDATE_ANY, params: uuidParamSchema, body: updateProductBodySchema, responses: { 200: apiSuccessSchema(productSchema), 401: apiErrorSchema, 403: apiErrorSchema, 404: apiErrorSchema } },
+  delete: { method: 'DELETE' as const, path: '/api/v1/products/:id', tags: ['Products'], permission: PERMISSIONS.PRODUCT.DELETE_ANY, params: uuidParamSchema, responses: { 204: z.null(), 401: apiErrorSchema, 403: apiErrorSchema, 404: apiErrorSchema } },
 } satisfies RouteMap
