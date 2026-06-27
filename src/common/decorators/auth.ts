@@ -12,27 +12,30 @@ declare module 'fastify' {
   }
 }
 
-async function populateRequestContext(request: FastifyRequest): Promise<boolean> {
+async function verifyAndGetUserId(request: FastifyRequest): Promise<string | null> {
   try {
     await request.jwtVerify()
   }
   catch {
-    return false
+    return null
   }
 
   const payload = request.user as { sub?: string, id?: string }
   const userId = payload.sub ?? payload.id
   if (!userId)
-    return false
+    return null
 
+  // ponytail: add Redis cache when DB query becomes a bottleneck
   const [activeUser] = await request.server.db
     .select({ id: users.id })
     .from(users)
     .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     .limit(1)
-  if (!activeUser)
-    return false
 
+  return activeUser ? userId : null
+}
+
+async function loadPermissions(request: FastifyRequest, userId: string): Promise<void> {
   // ponytail: add Redis cache when DB query becomes a bottleneck
   const userRoleRows = await request.server.db.query.userRoles.findMany({
     where: eq(userRoles.userId, userId),
@@ -55,18 +58,20 @@ async function populateRequestContext(request: FastifyRequest): Promise<boolean>
   request.requestContext.set('userId', userId)
   request.requestContext.set('permissions', permissions)
   request.requestContext.set('isSuperAdmin', isSuperAdmin)
-  return true
 }
 
 const authDecorator: FastifyPluginAsync = async (fastify) => {
   fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
-    const ok = await populateRequestContext(request)
-    if (!ok)
+    const userId = await verifyAndGetUserId(request)
+    if (!userId)
       return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } })
+    await loadPermissions(request, userId)
   })
 
   fastify.decorate('optionalAuthenticate', async (request: FastifyRequest, _reply: FastifyReply) => {
-    await populateRequestContext(request)
+    const userId = await verifyAndGetUserId(request)
+    if (userId)
+      await loadPermissions(request, userId)
   })
 
   fastify.decorate('requirePermission', (permission: string) => {
