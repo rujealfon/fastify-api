@@ -3,6 +3,9 @@ import cookie from '@fastify/cookie'
 import fp from 'fastify-plugin'
 
 const cookiePlugin: FastifyPluginAsync = async (fastify) => {
+  if (fastify.config.NODE_ENV === 'production' && fastify.config.COOKIE_SECRET.length < 32)
+    throw new Error('COOKIE_SECRET must be at least 32 characters in production')
+
   await fastify.register(cookie, {
     // Falls back to JWT_SECRET so the app works without a separate COOKIE_SECRET.
     // Set COOKIE_SECRET in prod to isolate cookie signing from JWT signing.

@@ -8,7 +8,7 @@ Health check module — liveness, readiness, and system detail probes for orches
 |---|---|---|
 | GET | `/health/live` | **Liveness** — always `200` if the process is running |
 | GET | `/health/ready` | **Readiness** — `200` when DB + Redis are reachable; `503` otherwise |
-| GET | `/health/details` | **Details** — heap usage, RSS, event loop delay/utilization, and pressure flag |
+| GET | `/health/details` | **Details** — authenticated admin-only heap usage, RSS, event loop delay/utilization, and pressure flag |
 
 ## Example responses
 
@@ -23,6 +23,8 @@ Health check module — liveness, readiness, and system detail probes for orches
 ```
 
 ### GET /health/details
+
+Requires authentication plus the `audit-log:read:any` permission.
 
 ```json
 {

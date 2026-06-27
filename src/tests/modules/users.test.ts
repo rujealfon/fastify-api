@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
+import type { User } from '@/modules/users/schemas/index.js'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
-import type { User } from '@/modules/users/schemas/index.js'
 
 describe('users API', () => {
   let app: FastifyInstance
@@ -444,10 +444,10 @@ describe('users API', () => {
       expect(res.statusCode).toBe(200)
     })
 
-    it('lets a non-admin delete their own account', async () => {
+    it('forbids a non-admin from deleting their own account without delete:any', async () => {
       const { id, token: t } = await registerNormal('n5@example.com')
       const res = await app.inject({ method: 'DELETE', url: `/api/v1/users/${id}`, headers: auth(t) })
-      expect(res.statusCode).toBe(204)
+      expect(res.statusCode).toBe(403)
     })
 
     it('forbids a non-admin from updating another user', async () => {

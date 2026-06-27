@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
+import { createTestApp, registerAdminAndLogin, registerAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 describe('products API', () => {
   let app: FastifyInstance
@@ -12,7 +12,7 @@ describe('products API', () => {
 
   beforeEach(async () => {
     await resetDb(app)
-    token = await registerAndLogin(app)
+    token = await registerAdminAndLogin(app)
   })
 
   afterAll(async () => {
@@ -30,6 +30,17 @@ describe('products API', () => {
     const body = res.json<{ data: { id: string, name: string } }>()
     expect(body.data.name).toBe('Widget')
     expect(body.data.id).toBeDefined()
+  })
+
+  it('returns 403 for product writes by a regular user', async () => {
+    const userToken = await registerAndLogin(app, { email: 'regular-product@example.com', password: 'password123' })
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/products',
+      headers: { authorization: `Bearer ${userToken}` },
+      payload: { name: 'Forbidden', price: 1.99, stock: 1 },
+    })
+    expect(res.statusCode).toBe(403)
   })
 
   it('gET /api/v1/products returns list', async () => {

@@ -1,4 +1,6 @@
 import type { FastifyReply } from 'fastify'
+import { Buffer } from 'node:buffer'
+import { timingSafeEqual } from 'node:crypto'
 import { ForbiddenError } from '@/common/errors/AppError.js'
 import { authSchema } from '@/contract/schemas/auth.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
@@ -7,6 +9,17 @@ import { createFastifyRpcPlugin } from '@/plugins/rpc.js'
 
 function signToken(user: { id: string, email: string }, reply: FastifyReply) {
   return reply.jwtSign({ sub: user.id, email: user.email })
+}
+
+function assertMobileApiKey(headerValue: string | string[] | undefined, expected: string) {
+  const provided = Array.isArray(headerValue) ? null : headerValue
+  if (!provided)
+    throw new ForbiddenError('Mobile login is restricted to mobile clients')
+
+  const providedBuffer = Buffer.from(provided)
+  const expectedBuffer = Buffer.from(expected)
+  if (providedBuffer.length !== expectedBuffer.length || !timingSafeEqual(providedBuffer, expectedBuffer))
+    throw new ForbiddenError('Mobile login is restricted to mobile clients')
 }
 
 export default createFastifyRpcPlugin(authSchema, {
@@ -23,14 +36,14 @@ export default createFastifyRpcPlugin(authSchema, {
       httpOnly: true,
       secure: request.server.config.NODE_ENV === 'production',
       sameSite: 'strict',
+      signed: true,
     })
     logAudit(request.server.db, { userId: user.id, action: 'auth.logged_in', resourceType: 'user', resourceId: user.id, metadata: { email: user.email, ip: request.ip, ua: request.headers['user-agent'] ?? null } })
     return { status: 200 as const, body: { success: true as const, data: { id: user.id, email: user.email } } }
   },
 
   mobileLogin: async ({ body, request, reply }) => {
-    if (request.headers['x-mobile-api-key'] !== request.server.config.MOBILE_API_KEY)
-      throw new ForbiddenError('Mobile login is restricted to mobile clients')
+    assertMobileApiKey(request.headers['x-mobile-api-key'], request.server.config.MOBILE_API_KEY)
     const user = await authService.loginUser(request.server.db, body)
     const token = await signToken(user, reply)
     logAudit(request.server.db, { userId: user.id, action: 'auth.logged_in', resourceType: 'user', resourceId: user.id, metadata: { email: user.email, ip: request.ip, ua: request.headers['user-agent'] ?? null } })
@@ -40,7 +53,7 @@ export default createFastifyRpcPlugin(authSchema, {
   logout: async ({ request, reply }) => {
     const userId = request.requestContext.get('userId') ?? null
     logAudit(request.server.db, { userId, action: 'auth.logged_out', resourceType: userId ? 'user' : 'anonymous', resourceId: userId, metadata: { ip: request.ip, ua: request.headers['user-agent'] ?? null } })
-    reply.clearCookie('token', { path: '/' })
+    reply.clearCookie('token', { path: '/', signed: true })
     return { status: 200 as const, body: { success: true as const, data: null } }
   },
 })

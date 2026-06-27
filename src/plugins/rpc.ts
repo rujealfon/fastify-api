@@ -51,6 +51,7 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
           ...(route.body !== undefined && { body: route.body }),
           response: route.responses,
         } as any,
+        config: route.rateLimit ? { rateLimit: route.rateLimit } : undefined,
         preValidation: preValidation.length ? preValidation : undefined,
         handler: async (request, reply) => {
           const result = await handler({

@@ -57,10 +57,10 @@ describe('permissions API', () => {
       expect(res.statusCode).toBe(200)
     })
 
-    it('returns all 15 seeded permissions', async () => {
+    it('returns all 19 seeded permissions', async () => {
       const res = await app.inject({ method: 'GET', url: '/api/v1/permissions', headers: auth(adminToken) })
       const { data } = res.json<{ data: Permission[] }>()
-      expect(data).toHaveLength(15)
+      expect(data).toHaveLength(19)
     })
 
     it('returns permissions with correct shape', async () => {
@@ -95,6 +95,10 @@ describe('permissions API', () => {
         'permission:update:any',
         'permission:delete:any',
         'audit-log:read:any',
+        'product:create:any',
+        'product:read:any',
+        'product:update:any',
+        'product:delete:any',
       ]
 
       for (const key of expected) {

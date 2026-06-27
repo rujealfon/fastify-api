@@ -16,6 +16,7 @@ export interface AppConfig {
   COOKIE_SECRET: string
   OTEL_ENDPOINT: string
   MOBILE_API_KEY: string
+  CORS_ORIGINS: string
 }
 
 export const configSchema = {
@@ -31,11 +32,12 @@ export const configSchema = {
     },
     DATABASE_URL: { type: 'string' },
     TEST_DATABASE_URL: { type: 'string', default: '' },
-    JWT_SECRET: { type: 'string' },
+    JWT_SECRET: { type: 'string', minLength: 32 },
     LOG_LEVEL: { type: 'string', default: 'info' },
     REDIS_URL: { type: 'string' },
     COOKIE_SECRET: { type: 'string', default: '' },
     OTEL_ENDPOINT: { type: 'string', default: '' },
-    MOBILE_API_KEY: { type: 'string' },
+    MOBILE_API_KEY: { type: 'string', minLength: 32 },
+    CORS_ORIGINS: { type: 'string', default: '' },
   },
 } as const

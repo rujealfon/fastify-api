@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
+import { PERMISSIONS } from '@/common/constants/index.js'
 import { apiErrorSchema, apiSuccessSchema } from '@/common/schemas/index.js'
 import * as controller from '@/modules/health/controllers/health.controller.js'
 
@@ -44,6 +45,7 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
         })),
       },
     },
+    preValidation: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.AUDIT_LOG.READ_ANY)],
     handler: controller.details,
   })
 }

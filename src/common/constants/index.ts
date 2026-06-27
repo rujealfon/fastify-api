@@ -18,6 +18,12 @@ export const PERMISSIONS = {
     READ_OWN: 'user:read:own',
     UPDATE_OWN: 'user:update:own',
   },
+  PRODUCT: {
+    READ_ANY: 'product:read:any',
+    CREATE_ANY: 'product:create:any',
+    UPDATE_ANY: 'product:update:any',
+    DELETE_ANY: 'product:delete:any',
+  },
   ROLE: {
     READ_ANY: 'role:read:any',
     CREATE_ANY: 'role:create:any',

@@ -51,6 +51,11 @@ export async function buildApp() {
     dotenv: true,
   })
 
+  // Data layer
+  await fastify.register(dbPlugin)
+  await fastify.register(redisPlugin)
+  await fastify.register(rateLimitPlugin)
+
   // Core utilities
   await fastify.register(sensiblePlugin)
 
@@ -59,14 +64,6 @@ export async function buildApp() {
   await fastify.register(compressPlugin)
   await fastify.register(corsPlugin)
   await fastify.register(cookiePlugin)
-
-  // API docs
-  await fastify.register(scalarPlugin)
-
-  // Data layer
-  await fastify.register(redisPlugin)
-  await fastify.register(rateLimitPlugin)
-  await fastify.register(dbPlugin)
 
   // Reliability
   await fastify.register(underPressurePlugin)
@@ -82,6 +79,9 @@ export async function buildApp() {
   await fastify.register(jwtPlugin)
   await fastify.register(authDecorator)
   await fastify.register(requestIdHook)
+
+  // API docs
+  await fastify.register(scalarPlugin)
 
   // Global error handler
   fastify.setErrorHandler((error, request, reply) => {
