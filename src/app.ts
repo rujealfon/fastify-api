@@ -1,5 +1,6 @@
 import type { FastifyServerOptions } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { existsSync, readFileSync } from 'node:fs'
 import process from 'node:process'
 import envPlugin from '@fastify/env'
 import Fastify from 'fastify'
@@ -35,6 +36,45 @@ type TrustProxyConfig = FastifyServerOptions['trustProxy']
 
 const DEFAULT_PRODUCTION_TRUST_PROXY = ['127.0.0.1', '::1']
 
+function loadDotEnvIntoProcess(path = '.env') {
+  if (!existsSync(path))
+    return
+
+  const content = readFileSync(path, 'utf8')
+
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim()
+
+    if (!trimmed || trimmed.startsWith('#'))
+      continue
+
+    const assignment = trimmed.startsWith('export ') ? trimmed.slice(7).trimStart() : trimmed
+    const separatorIndex = assignment.indexOf('=')
+    if (separatorIndex === -1)
+      continue
+
+    const key = assignment.slice(0, separatorIndex).trim()
+    const rawValue = assignment.slice(separatorIndex + 1).trim()
+    if (!/^[\w.-]+$/.test(key))
+      continue
+    if (process.env[key] !== undefined)
+      continue
+
+    let value = rawValue.trim()
+    const quote = value[0]
+    if ((quote === '"' || quote === '\'') && value.endsWith(quote)) {
+      value = value.slice(1, -1)
+      if (quote === '"')
+        value = value.replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t')
+    }
+    else {
+      value = value.replace(/\s+#.*$/, '')
+    }
+
+    process.env[key] = value
+  }
+}
+
 function parseTrustProxy(value = process.env.TRUST_PROXY, nodeEnv = process.env.NODE_ENV): TrustProxyConfig {
   if (value === undefined || value.trim() === '') {
     return nodeEnv === 'production' ? DEFAULT_PRODUCTION_TRUST_PROXY : false
@@ -59,6 +99,8 @@ function parseTrustProxy(value = process.env.TRUST_PROXY, nodeEnv = process.env.
 }
 
 export async function buildApp() {
+  loadDotEnvIntoProcess()
+
   const fastify = Fastify({
     trustProxy: parseTrustProxy(),
     logger: {
