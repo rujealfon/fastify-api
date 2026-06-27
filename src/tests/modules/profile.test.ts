@@ -47,7 +47,7 @@ describe('profile API', () => {
     })
 
     it('returns the user that matches the JWT, not another user', async () => {
-      const otherToken = await registerAndLogin(app, { email: 'other@example.com', password: 'password123' })
+      const otherToken = await registerAndLogin(app, { email: 'other@example.com', password: 'Password123' })
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/profile',

@@ -84,7 +84,7 @@ describe('audit logs API', () => {
 
     it('returns 403 when requesting another user logs', async () => {
       const token = await registerAndLogin(app)
-      const otherToken = await registerAndLogin(app, { email: 'other@example.com', password: 'password123' })
+      const otherToken = await registerAndLogin(app, { email: 'other@example.com', password: 'Password123' })
 
       // Get the other user's id by logging in and hitting /profile
       const profileRes = await app.inject({
@@ -213,8 +213,8 @@ describe('audit logs API', () => {
     })
 
     it('records user.deleted after deleting a user', async () => {
-      const observerToken = await registerSuperAdminAndLogin(app, { email: 'observer@example.com', password: 'password123' })
-      const adminToken = await registerAdminAndLogin(app, { email: 'todelete@example.com', password: 'password123' })
+      const observerToken = await registerSuperAdminAndLogin(app, { email: 'observer@example.com', password: 'Password123' })
+      const adminToken = await registerAdminAndLogin(app, { email: 'todelete@example.com', password: 'Password123' })
       const profileRes = await app.inject({
         method: 'GET',
         url: '/api/v1/profile',

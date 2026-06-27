@@ -24,7 +24,7 @@ describe('users API', () => {
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
-  async function createUser(email = 'user@example.com', password = 'password123') {
+  async function createUser(email = 'user@example.com', password = 'Password123') {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/users',
@@ -152,7 +152,7 @@ describe('users API', () => {
     })
 
     it('returns assigned roles for a user registered via auth', async () => {
-      const reg = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email: 'withrole@example.com', password: 'password123' } })
+      const reg = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email: 'withrole@example.com', password: 'Password123' } })
       const userId = reg.json<{ data: { id: string } }>().data.id
       const res = await app.inject({
         method: 'GET',
@@ -206,7 +206,7 @@ describe('users API', () => {
         method: 'POST',
         url: '/api/v1/users',
         headers: { authorization: `Bearer ${token}` },
-        payload: { email: 'new@example.com', password: 'password123' },
+        payload: { email: 'new@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(201)
       const { data } = res.json<{ data: User }>()
@@ -228,7 +228,7 @@ describe('users API', () => {
         method: 'POST',
         url: '/api/v1/users',
         headers: { authorization: `Bearer ${token}` },
-        payload: { email: 'new@example.com', password: 'password123' },
+        payload: { email: 'new@example.com', password: 'Password123' },
       })
       expect(res.json()).not.toHaveProperty('data.passwordHash')
     })
@@ -239,7 +239,7 @@ describe('users API', () => {
         method: 'POST',
         url: '/api/v1/users',
         headers: { authorization: `Bearer ${token}` },
-        payload: { email: 'dup@example.com', password: 'password123' },
+        payload: { email: 'dup@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(409)
     })
@@ -255,7 +255,7 @@ describe('users API', () => {
         method: 'POST',
         url: '/api/v1/users',
         headers: { authorization: `Bearer ${token}` },
-        payload: { email: 'reuse@example.com', password: 'password123' },
+        payload: { email: 'reuse@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(201)
     })
@@ -265,7 +265,7 @@ describe('users API', () => {
         method: 'POST',
         url: '/api/v1/users',
         headers: { authorization: `Bearer ${token}` },
-        payload: { email: 'bad-email', password: 'password123' },
+        payload: { email: 'bad-email', password: 'Password123' },
       })
       expect(res.statusCode).toBe(400)
     })
@@ -410,9 +410,9 @@ describe('users API', () => {
   describe('authorization', () => {
     // Register a normal (non-admin) user and return { id, token }.
     async function registerNormal(email: string) {
-      const reg = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email, password: 'password123' } })
+      const reg = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email, password: 'Password123' } })
       const id = reg.json<{ data: { id: string } }>().data.id
-      const loginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email, password: 'password123' } })
+      const loginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email, password: 'Password123' } })
       const userToken = extractTokenFromCookie(loginRes.headers['set-cookie'])
       return { id, token: userToken }
     }
@@ -434,7 +434,7 @@ describe('users API', () => {
 
     it('forbids a non-admin from creating users', async () => {
       const { token: t } = await registerNormal('n3@example.com')
-      const res = await app.inject({ method: 'POST', url: '/api/v1/users', headers: auth(t), payload: { email: 'x@example.com', password: 'password123' } })
+      const res = await app.inject({ method: 'POST', url: '/api/v1/users', headers: auth(t), payload: { email: 'x@example.com', password: 'Password123' } })
       expect(res.statusCode).toBe(403)
     })
 
@@ -550,7 +550,7 @@ describe('users API', () => {
       // attempt mass-assignment of role through the self-update path
       await app.inject({ method: 'PATCH', url: `/api/v1/users/${id}`, headers: auth(t), payload: { email: 'escalate@example.com', role: 'admin' } })
       // re-login so the token reflects any (un)changed role, then probe an admin-only route
-      const reloginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'escalate@example.com', password: 'password123' } })
+      const reloginRes = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'escalate@example.com', password: 'Password123' } })
       const fresh = extractTokenFromCookie(reloginRes.headers['set-cookie'])
       const res = await app.inject({ method: 'GET', url: '/api/v1/users', headers: auth(fresh) })
       expect(res.statusCode).toBe(403)
