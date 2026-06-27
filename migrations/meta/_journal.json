@@ -69,7 +69,7 @@
       "idx": 9,
       "version": "7",
       "when": 1751034000000,
-      "tag": "0009_backfill_admin_system_role",
+      "tag": "0009_noop_admin_role_not_system",
       "breakpoints": true
     }
   ]
