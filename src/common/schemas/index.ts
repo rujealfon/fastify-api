@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+export const passwordSchema = z.string()
+  .min(8)
+  .max(72)
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+    'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+  )
+
 export const paginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1).meta({ examples: [1] }),
   limit: z.coerce.number().int().min(1).max(100).default(10).meta({ examples: [10] }),

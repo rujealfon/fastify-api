@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { paginationQuerySchema, uuidParamSchema } from '@/common/schemas/index.js'
+import { paginationQuerySchema, passwordSchema, uuidParamSchema } from '@/common/schemas/index.js'
 
 export const profileSchema = z.object({
   firstName: z.string().nullable().meta({ examples: ['John'] }),
@@ -26,7 +26,7 @@ export const userSchema = z.object({
 
 export const createUserBodySchema = z.object({
   email: z.email().meta({ examples: ['user@example.com'] }),
-  password: z.string().min(8).max(72).meta({ examples: ['securepassword123'] }),
+  password: passwordSchema.meta({ examples: ['SecurePassword1'] }),
 })
 
 export const updateProfileBodySchema = z.object({

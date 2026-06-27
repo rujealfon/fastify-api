@@ -64,6 +64,13 @@
       "when": 1751030400000,
       "tag": "0008_audit_logs_user_id_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1751034000000,
+      "tag": "0009_backfill_admin_system_role",
+      "breakpoints": true
     }
   ]
 }

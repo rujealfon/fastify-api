@@ -1,10 +1,9 @@
 import { z } from 'zod'
+import { passwordSchema } from '@/common/schemas/index.js'
 
 export const registerBodySchema = z.object({
   email: z.email().meta({ examples: ['alice@example.com'] }),
-  password: z.string().min(8).max(72)
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number')
-    .meta({ examples: ['SecurePassword1'] }),
+  password: passwordSchema.meta({ examples: ['SecurePassword1'] }),
 })
 
 export const loginBodySchema = z.object({
