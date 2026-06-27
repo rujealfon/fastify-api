@@ -36,4 +36,7 @@ export const PERMISSIONS = {
   AUDIT_LOG: {
     READ_ANY: 'audit-log:read:any',
   },
+  METRICS: {
+    READ_ANY: 'metrics:read:any',
+  },
 } as const

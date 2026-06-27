@@ -7,6 +7,10 @@ const corsPlugin: FastifyPluginAsync = async (fastify) => {
     ? fastify.config.CORS_ORIGIN.split(',').map(s => s.trim()).filter(Boolean)
     : []
 
+  if (fastify.config.NODE_ENV === 'production' && configuredOrigins.length === 0) {
+    throw new Error('CORS_ORIGIN must be set in production')
+  }
+
   const origin = fastify.config.NODE_ENV === 'production'
     ? configuredOrigins
     : ['http://localhost:3000', 'http://localhost:5173']

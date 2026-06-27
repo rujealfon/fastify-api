@@ -30,6 +30,7 @@ const SEED_PERMISSIONS = [
   { resource: 'product', action: 'update', scope: 'any' },
   { resource: 'product', action: 'delete', scope: 'any' },
   { resource: 'audit-log', action: 'read', scope: 'any' },
+  { resource: 'metrics', action: 'read', scope: 'any' },
 ]
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {

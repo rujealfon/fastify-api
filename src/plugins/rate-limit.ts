@@ -11,7 +11,6 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(rateLimit, {
     max: 100,
     timeWindow: '15 minutes',
-    allowList: ['127.0.0.1'],
     redis: fastify.redis,
     // Parse the leftmost entry from x-forwarded-for so clients behind a trusted
     // reverse proxy are keyed by their real IP. Do not trust the full header
