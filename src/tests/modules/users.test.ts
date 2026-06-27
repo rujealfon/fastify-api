@@ -1,23 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
-
-interface Profile {
-  firstName: string | null
-  lastName: string | null
-  avatarUrl: string | null
-  bio: string | null
-  phoneNumber: string | null
-  birthDate: string | null
-}
-
-interface User {
-  id: string
-  email: string
-  profile: Profile
-  createdAt: string
-  updatedAt: string
-}
+import type { User } from '@/modules/users/schemas/index.js'
 
 describe('users API', () => {
   let app: FastifyInstance
@@ -89,6 +73,8 @@ describe('users API', () => {
       expect(user).toHaveProperty('createdAt')
       expect(user).toHaveProperty('updatedAt')
       expect(user).toHaveProperty('profile')
+      expect(user).toHaveProperty('roles')
+      expect(Array.isArray(user.roles)).toBe(true)
       expect(user).not.toHaveProperty('passwordHash')
       expect(user.profile).toMatchObject({
         firstName: null,
@@ -154,6 +140,7 @@ describe('users API', () => {
       expect(data.id).toBe(created.id)
       expect(data.email).toBe('find@example.com')
       expect(data.profile).toBeDefined()
+      expect(Array.isArray(data.roles)).toBe(true)
       expect(data.profile).toMatchObject({
         firstName: null,
         lastName: null,
@@ -162,6 +149,19 @@ describe('users API', () => {
         phoneNumber: null,
         birthDate: null,
       })
+    })
+
+    it('returns assigned roles for a user registered via auth', async () => {
+      const reg = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email: 'withrole@example.com', password: 'password123' } })
+      const userId = reg.json<{ data: { id: string } }>().data.id
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/users/${userId}`,
+        headers: { authorization: `Bearer ${token}` },
+      })
+      expect(res.statusCode).toBe(200)
+      const { data } = res.json<{ data: User }>()
+      expect(data.roles).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'user' })]))
     })
 
     it('returns 404 for unknown id', async () => {
@@ -212,6 +212,7 @@ describe('users API', () => {
       const { data } = res.json<{ data: User }>()
       expect(data.id).toBeDefined()
       expect(data.email).toBe('new@example.com')
+      expect(data.roles).toEqual([])
       expect(data.profile).toMatchObject({
         firstName: null,
         lastName: null,
@@ -315,6 +316,7 @@ describe('users API', () => {
       const { data } = res.json<{ data: User }>()
       expect(data.email).toBe('after@example.com')
       expect(data.profile).toBeDefined()
+      expect(Array.isArray(data.roles)).toBe(true)
     })
 
     it('returns 404 for unknown id', async () => {

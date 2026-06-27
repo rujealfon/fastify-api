@@ -22,6 +22,10 @@ const profileColumns = {
   birthDate: true,
 } as const
 
+const userRolesRelation = {
+  with: { role: { columns: { id: true, name: true } } },
+} as const
+
 interface UserRow {
   id: string
   email: string
@@ -35,6 +39,7 @@ interface UserRow {
     phoneNumber: string | null
     birthDate: string | null
   } | null
+  userRoles?: { role: { id: string, name: string } }[]
 }
 
 function toUser(row: UserRow) {
@@ -49,6 +54,7 @@ function toUser(row: UserRow) {
       phoneNumber: null,
       birthDate: null,
     },
+    roles: (row.userRoles ?? []).map(ur => ({ id: ur.role.id, name: ur.role.name })),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }
@@ -58,7 +64,7 @@ export async function findAllUsers(db: Db, page: number, limit: number) {
   const [rows, [{ total }]] = await Promise.all([
     db.query.users.findMany({
       columns: userColumns,
-      with: { profile: { columns: profileColumns } },
+      with: { profile: { columns: profileColumns }, userRoles: userRolesRelation },
       where: isNull(users.deletedAt),
       offset: (page - 1) * limit,
       limit,
@@ -71,7 +77,7 @@ export async function findAllUsers(db: Db, page: number, limit: number) {
 export async function findUserById(db: Db, id: string) {
   const row = await db.query.users.findFirst({
     columns: userColumns,
-    with: { profile: { columns: profileColumns } },
+    with: { profile: { columns: profileColumns }, userRoles: userRolesRelation },
     where: and(eq(users.id, id), isNull(users.deletedAt)),
   })
   if (!row)
