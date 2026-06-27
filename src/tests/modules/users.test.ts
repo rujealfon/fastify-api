@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 import type { User } from '@/modules/users/schemas/index.js'
+import { createTestApp, extractTokenFromCookie, registerAdminAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 describe('users API', () => {
   let app: FastifyInstance

@@ -1,4 +1,5 @@
 import type { FastifyReply } from 'fastify'
+import { Buffer } from 'node:buffer'
 import { timingSafeEqual } from 'node:crypto'
 import { ForbiddenError } from '@/common/errors/AppError.js'
 import { authSchema } from '@/contract/schemas/auth.js'
