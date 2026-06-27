@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import process from 'node:process'
 import { checkDb, checkRedis } from '@/modules/health/services/health.service.js'
 
 export async function liveness(_request: FastifyRequest, _reply: FastifyReply) {
@@ -25,18 +26,30 @@ export async function readiness(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export async function details(request: FastifyRequest, _reply: FastifyReply) {
-  const memory = request.server.memoryUsage()
+  const processMemory = process.memoryUsage()
+  const memory = typeof request.server.memoryUsage === 'function'
+    ? request.server.memoryUsage()
+    : {
+        heapUsed: processMemory.heapUsed,
+        rssBytes: processMemory.rss,
+        eventLoopDelay: 0,
+        eventLoopUtilized: 0,
+      }
+  const underPressure = typeof request.server.isUnderPressure === 'function'
+    ? request.server.isUnderPressure()
+    : false
+
   return {
     success: true as const,
     data: {
-      status: request.server.isUnderPressure() ? 'degraded' : 'ok',
+      status: underPressure ? 'degraded' : 'ok',
       memory: {
         heapUsed: memory.heapUsed,
         rssBytes: memory.rssBytes,
         eventLoopDelay: memory.eventLoopDelay,
         eventLoopUtilized: memory.eventLoopUtilized,
       },
-      underPressure: request.server.isUnderPressure(),
+      underPressure,
     },
   }
 }

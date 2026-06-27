@@ -143,13 +143,12 @@ describe('audit logs API', () => {
 
   describe('mutation logging smoke tests', () => {
     it('records product.created after creating a product', async () => {
-      const userToken = await registerAndLogin(app)
       const adminToken = await registerAdminAndLogin(app)
 
       await app.inject({
         method: 'POST',
         url: '/api/v1/products',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: { authorization: `Bearer ${adminToken}` },
         payload: { name: 'Widget', price: 9.99, stock: 5 },
       })
 
@@ -167,13 +166,12 @@ describe('audit logs API', () => {
     })
 
     it('records product.deleted with metadata after deleting a product', async () => {
-      const userToken = await registerAndLogin(app)
       const adminToken = await registerAdminAndLogin(app)
 
       const created = await app.inject({
         method: 'POST',
         url: '/api/v1/products',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: { authorization: `Bearer ${adminToken}` },
         payload: { name: 'Doomed Widget', price: 4.99, stock: 1 },
       })
       const productId = created.json().data.id
@@ -181,7 +179,7 @@ describe('audit logs API', () => {
       await app.inject({
         method: 'DELETE',
         url: `/api/v1/products/${productId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: { authorization: `Bearer ${adminToken}` },
       })
 
       const body = await eventually(

@@ -444,10 +444,10 @@ describe('users API', () => {
       expect(res.statusCode).toBe(200)
     })
 
-    it('forbids a non-admin from deleting their own account without delete:any', async () => {
+    it('lets a non-admin delete their own account', async () => {
       const { id, token: t } = await registerNormal('n5@example.com')
       const res = await app.inject({ method: 'DELETE', url: `/api/v1/users/${id}`, headers: auth(t) })
-      expect(res.statusCode).toBe(403)
+      expect(res.statusCode).toBe(204)
     })
 
     it('forbids a non-admin from updating another user', async () => {

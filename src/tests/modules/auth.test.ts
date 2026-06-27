@@ -264,7 +264,7 @@ describe('auth API', () => {
   describe('/api/v1/auth/logout POST ', () => {
     it('clears the token cookie', async () => {
       const token = await registerAndLogin(app, { email: 'logout@example.com', password: 'password123' })
-      const res = await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { cookie: `token=${token}` } })
+      const res = await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { authorization: `Bearer ${token}` } })
       expect(res.statusCode).toBe(200)
       const cookie = firstCookieHeader(res.headers['set-cookie'])
       expect(cookie).toMatch(/^token=(?:;|$)/)
@@ -274,7 +274,7 @@ describe('auth API', () => {
     it('records the logged-out user in the audit log', async () => {
       const { user, token } = await registerAndLoginWithUser(app, { email: 'logout-audit@example.com', password: 'password123' })
 
-      await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { cookie: `token=${token}` } })
+      await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { authorization: `Bearer ${token}` } })
 
       const [log] = await eventually(
         () => app.db

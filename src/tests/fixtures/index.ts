@@ -66,10 +66,9 @@ export function firstCookieHeader(setCookie: string | string[] | undefined): str
 export function extractTokenFromCookie(setCookie: string | string[] | undefined): string {
   const rawCookieValue = firstCookieHeader(setCookie).split(';')[0].replace(/^token=/, '')
   const cookieValue = decodeURIComponent(rawCookieValue)
-  const signatureSeparatorIndex = cookieValue.lastIndexOf('.')
-  const token = cookieValue.startsWith('s:') && signatureSeparatorIndex > 2
-    ? cookieValue.slice(2, signatureSeparatorIndex)
-    : cookieValue
+  const unsignedCookieValue = cookieValue.startsWith('s:') ? cookieValue.slice(2) : cookieValue
+  const tokenParts = unsignedCookieValue.split('.')
+  const token = tokenParts.length > 3 ? tokenParts.slice(0, 3).join('.') : unsignedCookieValue
   if (!token)
     throw new Error('token cookie not found in Set-Cookie header')
   return token
