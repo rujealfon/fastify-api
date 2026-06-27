@@ -78,7 +78,7 @@ export async function loginUser(db: Db, body: LoginBody) {
   // is found the DUMMY_HASH comparison ensures a constant-time response.
   const valid = user
     ? await bcrypt.compare(body.password, user.passwordHash)
-    : (await bcrypt.compare(body.password, DUMMY_HASH), false)
+    : await bcrypt.compare(body.password, DUMMY_HASH).then(() => false)
 
   if (!user || !valid)
     throw new UnauthorizedError('Invalid email or password')
