@@ -60,7 +60,7 @@ describe('permissions API', () => {
     it('returns all 15 seeded permissions', async () => {
       const res = await app.inject({ method: 'GET', url: '/api/v1/permissions', headers: auth(adminToken) })
       const { data } = res.json<{ data: Permission[] }>()
-      expect(data).toHaveLength(19)
+      expect(data).toHaveLength(20)
     })
 
     it('returns permissions with correct shape', async () => {

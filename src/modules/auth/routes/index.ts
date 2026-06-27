@@ -1,6 +1,5 @@
 import type { FastifyReply } from 'fastify'
-import { Buffer } from 'node:buffer'
-import { timingSafeEqual } from 'node:crypto'
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { ForbiddenError } from '@/common/errors/AppError.js'
 import { authSchema } from '@/contract/schemas/auth.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
@@ -31,9 +30,11 @@ export default createFastifyRpcPlugin(authSchema, {
   },
 
   mobileLogin: async ({ body, request, reply }) => {
-    const provided = Buffer.from(request.headers['x-mobile-api-key'] as string ?? '')
-    const expected = Buffer.from(request.server.config.MOBILE_API_KEY)
-    if (provided.length !== expected.length || !timingSafeEqual(provided, expected))
+    // Hash both values to a fixed 32-byte digest before comparing so the
+    // comparison is always constant-time and leaks neither key length nor content.
+    const provided = createHash('sha256').update(request.headers['x-mobile-api-key'] as string ?? '').digest()
+    const expected = createHash('sha256').update(request.server.config.MOBILE_API_KEY).digest()
+    if (!timingSafeEqual(provided, expected))
       throw new ForbiddenError('Mobile login is restricted to mobile clients')
     const user = await authService.loginUser(request.server.db, body)
     const token = await signToken(user, reply)

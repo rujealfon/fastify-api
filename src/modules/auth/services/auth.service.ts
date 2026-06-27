@@ -17,8 +17,12 @@ export async function registerUser(db: Db, body: RegisterBody) {
   // (the partial unique index only covers deletedAt IS NULL), so the conflict
   // check must be scoped to active rows specifically.
   const active = await db.query.users.findFirst({ where: and(eq(users.email, body.email), isNull(users.deletedAt)) })
-  if (active)
+  if (active) {
+    // Normalize timing — run a dummy compare so active-conflict responses take
+    // the same bcrypt time as the dead-account path, preventing enumeration.
+    await bcrypt.compare(body.password, DUMMY_HASH)
     throw new ConflictError('An account with this email already exists')
+  }
 
   // Reactivate a soft-deleted account if the password matches (within the 90-day
   // window before the cleanup cron hard-deletes it). Profile row still exists, so
