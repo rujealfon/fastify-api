@@ -10,7 +10,7 @@ const SEED_ROLES = [
   { name: 'user', description: 'Standard user access', isSystemRole: false },
 ]
 
-const SEED_PERMISSIONS = [
+export const SEED_PERMISSIONS = [
   { resource: 'user', action: 'create', scope: 'any' },
   { resource: 'user', action: 'read', scope: 'any' },
   { resource: 'user', action: 'update', scope: 'any' },
