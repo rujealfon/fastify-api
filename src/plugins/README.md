@@ -36,7 +36,7 @@ requestIdHook      ← writes requestId into request context
 | `cors.ts` | `@fastify/cors` | CORS — production-restricted by `NODE_ENV` |
 | `cookie.ts` | `@fastify/cookie` | Signed cookie parsing (`COOKIE_SECRET` \| `JWT_SECRET`) |
 | `redis.ts` | `@fastify/redis` | `fastify.redis` — shared ioredis client |
-| `rate-limit.ts` | `@fastify/rate-limit` | Per-IP rate limiting (Redis store, 100 req / 15 min) |
+| `rate-limit.ts` | `@fastify/rate-limit` | Production-only per-IP rate limiting (Redis store, 100 req / 15 min) |
 | `db.ts` | `drizzle-orm` | `fastify.db` — typed Drizzle ORM instance |
 | `under-pressure.ts` | `@fastify/under-pressure` | Auto-503 when heap > 200 MB, RSS > 300 MB, or loop delay > 1 s |
 | `multipart.ts` | `@fastify/multipart` | File upload support (10 MB / file, max 10 files) |

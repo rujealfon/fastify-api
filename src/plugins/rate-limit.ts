@@ -3,9 +3,9 @@ import rateLimit from '@fastify/rate-limit'
 import fp from 'fastify-plugin'
 
 const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
-  // Skip only in test — rate limits would break integration tests that hit
-  // auth endpoints many times and use real Redis with shared counters.
-  if (fastify.config.NODE_ENV === 'test')
+  // Keep local development and integration tests unthrottled. Production uses
+  // Redis-backed limits so counters are shared across app instances.
+  if (fastify.config.NODE_ENV !== 'production')
     return
 
   await fastify.register(rateLimit, {
