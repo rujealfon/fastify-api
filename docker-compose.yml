@@ -60,7 +60,7 @@ services:
     volumes:
       - ./src:/app/src
       - ./tsconfig.json:/app/tsconfig.json:ro
-      - ./eslint.config.js:/app/eslint.config.js:ro
+      - ./eslint.config.mjs:/app/eslint.config.mjs:ro
       - ./vitest.config.ts:/app/vitest.config.ts:ro
 
   drizzle-studio:
