@@ -183,3 +183,15 @@ docker-compose down
 # Stop and wipe all data
 docker-compose down -v
 ```
+
+### Fix stale app dependencies
+
+If tests fail with `Cannot find package ... imported from /app/...` but the package is already in `package.json` and `pnpm-lock.yaml`, rebuild and recreate the app container. The app's `node_modules` comes from the image, not the host.
+
+```bash
+docker compose build app
+docker compose up -d app
+
+# Optional sanity check for one missing package
+docker exec fastify_app node -e "import('@opentelemetry/api').then(()=>console.log('otel api ok'))"
+```
