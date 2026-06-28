@@ -16,7 +16,7 @@ Application source code. Everything here compiles to `../dist/` via `tsc && tsc-
 |---|---|
 | `config/` | Environment variable schema (JSON Schema + Zod-compatible) and `AppConfig` type augmentation |
 | `db/` | Drizzle ORM client factory and all table schema definitions |
-| `plugins/` | One Fastify plugin file per concern (cors, redis, rate-limit, compress, …) |
+| `plugins/` | One Fastify plugin file per concern (cors, valkey, rate-limit, compress, …) |
 | `common/` | Cross-cutting utilities: decorators, error classes, hooks, shared Zod schemas |
 | `contract/` | RPC contract layer — `RouteMap` schemas, `createApiClient`, shared between server and client |
 | `modules/` | Domain modules — each contains schemas, services, controllers, routes |

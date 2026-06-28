@@ -1,6 +1,6 @@
 # src/tests/
 
-Integration tests powered by [Vitest](https://vitest.dev). Tests run against a real database and Redis — no mocks for infrastructure.
+Integration tests powered by [Vitest](https://vitest.dev). Tests run against a real database and Valkey — no mocks for infrastructure.
 
 ## Structure
 
@@ -16,7 +16,7 @@ tests/
 ## Running tests
 
 ```bash
-# Requires a running PostgreSQL + Redis (docker-compose is the easiest way)
+# Requires a running PostgreSQL + Valkey (docker-compose is the easiest way)
 vitest run
 
 # Watch mode
@@ -57,4 +57,4 @@ const res = await app.inject({
 - Each test file is independent — create its own app instance.
 - Use `app.inject()` (Fastify's built-in HTTP injection) rather than `fetch` or `supertest`.
 - Clean up the database between tests using transactions or truncation to avoid state leakage.
-- Never mock the database or Redis — integration tests must exercise the real adapters.
+- Never mock the database or Valkey — integration tests must exercise the real adapters.

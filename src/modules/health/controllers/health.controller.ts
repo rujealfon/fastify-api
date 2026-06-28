@@ -1,22 +1,22 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { checkDb, checkRedis } from '@/modules/health/services/health.service.js'
+import { checkDb, checkValkey } from '@/modules/health/services/health.service.js'
 
 export async function liveness(_request: FastifyRequest, _reply: FastifyReply) {
   return { success: true as const, data: { status: 'ok' } }
 }
 
 export async function readiness(request: FastifyRequest, reply: FastifyReply) {
-  const [dbOk, redisOk] = await Promise.all([
+  const [dbOk, valkeyOk] = await Promise.all([
     checkDb(request.server.db),
-    checkRedis(request.server.redis),
+    checkValkey(request.server.valkey),
   ])
 
-  if (!dbOk || !redisOk) {
+  if (!dbOk || !valkeyOk) {
     return reply.status(503).send({
       success: false,
       error: {
         code: 'SERVICE_UNAVAILABLE',
-        message: !dbOk ? 'database unreachable' : 'redis unreachable',
+        message: !dbOk ? 'database unreachable' : 'valkey unreachable',
       },
     })
   }

@@ -33,7 +33,7 @@ No other files need to change — `fastify.config.MY_VAR` is immediately availab
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | Min 32 characters |
-| `REDIS_URL` | Redis connection string |
+| `VALKEY_URL` | Valkey connection string (use the `redis://` protocol scheme) |
 
 ## Optional variables
 

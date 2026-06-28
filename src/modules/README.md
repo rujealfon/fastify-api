@@ -24,7 +24,7 @@ Domain modules. Each module owns its full vertical slice: validation schema → 
 
 ## Rules
 
-- **Services** receive `db: Db` (and `redis` where needed) as parameters — never import from `fastify` directly. This keeps them unit-testable without a running server.
+- **Services** receive `db: Db` (and `valkey` where needed) as parameters — never import from `fastify` directly. This keeps them unit-testable without a running server.
 - **Schemas** are the single source of truth for types. Never write a manual `interface` — use `z.infer<>`.
 - **Cross-module imports are forbidden** — modules must not import from each other. Shared code belongs in `common/`.
 
