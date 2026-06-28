@@ -1,6 +1,6 @@
 # Fastify API
 
-A production-ready REST API built with **Fastify 5**, **TypeScript**, **PostgreSQL**, **Redis**, and **Drizzle ORM**, following a domain-driven architecture designed to scale from medium to large applications.
+A production-ready REST API built with **Fastify 5**, **TypeScript**, **PostgreSQL**, **Valkey**, and **Drizzle ORM**, following a domain-driven architecture designed to scale from medium to large applications.
 
 ## Tech Stack
 
@@ -9,7 +9,7 @@ A production-ready REST API built with **Fastify 5**, **TypeScript**, **PostgreS
 | Framework | [Fastify 5](https://fastify.dev) |
 | Language | TypeScript 5.9 (NodeNext modules) |
 | Database | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team) |
-| Cache / Rate-limit store | Redis via [@fastify/redis](https://github.com/fastify/fastify-redis) + [ioredis](https://github.com/redis/ioredis) |
+| Cache / Rate-limit store | Valkey via [Valkey GLIDE](https://glide.valkey.io/) |
 | Validation | [Zod](https://zod.dev) + [fastify-type-provider-zod](https://github.com/turkerdev/fastify-type-provider-zod) |
 | Auth | JWT via [@fastify/jwt](https://github.com/fastify/fastify-jwt) |
 | API Docs | [Scalar](https://scalar.com) + [@fastify/swagger](https://github.com/fastify/fastify-swagger) (OpenAPI 3.0) |
@@ -37,8 +37,8 @@ src/
 │   ├── helmet.ts                 # @fastify/helmet — security headers
 │   ├── cors.ts                   # @fastify/cors
 │   ├── cookie.ts                 # @fastify/cookie — signed cookie support
-│   ├── redis.ts                  # @fastify/redis — shared ioredis connection
-│   ├── rate-limit.ts             # @fastify/rate-limit (Redis-backed, multi-instance safe)
+│   ├── valkey.ts                 # Shared Valkey GLIDE connection
+│   ├── rate-limit.ts             # @fastify/rate-limit (Valkey-backed, multi-instance safe)
 │   ├── under-pressure.ts         # @fastify/under-pressure — auto-503 under load
 │   ├── multipart.ts              # @fastify/multipart — file upload support
 │   ├── request-context.ts        # @fastify/request-context — AsyncLocalStorage per request
@@ -89,7 +89,7 @@ cp .env.example .env
 |---|---|---|---|
 | `DATABASE_URL` | ✅ | — | PostgreSQL connection string |
 | `JWT_SECRET` | ✅ | — | Secret for signing JWTs (min 32 chars) |
-| `REDIS_URL` | ✅ | — | Redis connection string (e.g. `redis://localhost:6379`) |
+| `VALKEY_URL` | ✅ | — | Valkey connection string (use `redis://`, e.g. `redis://localhost:6379`) |
 | `MOBILE_API_KEY` | ✅ | — | Shared secret for mobile clients using `x-mobile-api-key` |
 | `TEST_DATABASE_URL` | | *(empty)* | PostgreSQL connection string used by test runs |
 | `PORT` | | `3000` | Server port |
@@ -182,7 +182,7 @@ Each log entry records `action`, `resource_type`, `resource_id`, `metadata`, and
 | Method | Path | Description |
 |---|---|---|
 | GET | `/health/live` | Liveness probe — always 200 if process is up |
-| GET | `/health/ready` | Readiness probe — checks DB + Redis connectivity |
+| GET | `/health/ready` | Readiness probe — checks DB + Valkey connectivity |
 | GET | `/health/details` | System details — heap, RSS, event loop lag, pressure status |
 
 ### Observability
@@ -356,12 +356,12 @@ Errors from the server surface as `RpcError` (with `.status` and `.data`) on the
 ## Architecture Notes
 
 - **Contract-first RPC** — `src/contract/` is the single source of truth for route shapes. `createFastifyRpcPlugin` wires the server; `createApiClient` wires the client. A schema change is a type error on both sides simultaneously.
-- **Plugin registration order** in `app.ts` is intentional: `env` must be first, `redis` must precede `rate-limit`, `request-context` must precede `auth-decorator` (context must exist before being written to).
-- **Dynamic RBAC** — permissions are loaded from the DB on every request, not embedded in the JWT. Role changes take effect immediately without re-login. Redis caching is a future upgrade path.
+- **Plugin registration order** in `app.ts` is intentional: `env` must be first, `valkey` must precede `rate-limit`, `request-context` must precede `auth-decorator` (context must exist before being written to).
+- **Dynamic RBAC** — permissions are loaded from the DB on every request, not embedded in the JWT. Role changes take effect immediately without re-login. Valkey caching is a future upgrade path.
 - **Zod is the single source of truth** for types — no manual interfaces. All types are derived via `z.infer<>` from schemas in each module's `schemas/index.ts`.
 - **Services have no Fastify imports** — they receive `db` as a parameter, making them independently testable.
 - **Error handling** is centralized in `app.ts` via `setErrorHandler`. All domain errors extend `AppError`.
-- **Rate limiting** uses Redis as the store — safe for multi-instance / horizontally scaled deployments.
+- **Rate limiting** uses Valkey as the store — safe for multi-instance / horizontally scaled deployments.
 - **Request context** (`@fastify/request-context`) stores `requestId`, `userId`, `permissions`, and `isSuperAdmin` via AsyncLocalStorage, accessible anywhere in the call stack without passing them explicitly.
 - **Audit logging** is fire-and-forget (`logAudit` in `src/modules/audit-logs/helpers/`) — inserts never block the request path. Failures are silently swallowed so a logging error never surfaces to the caller.
 - **Graceful shutdown** is handled in `server.ts` — `SIGINT`/`SIGTERM` closes Fastify (draining connections) and flushes OpenTelemetry spans before exiting.

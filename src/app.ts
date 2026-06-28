@@ -26,11 +26,11 @@ import jwtPlugin from './plugins/jwt.js'
 import metricsPlugin from './plugins/metrics.js'
 import multipartPlugin from './plugins/multipart.js'
 import rateLimitPlugin from './plugins/rate-limit.js'
-import redisPlugin from './plugins/redis.js'
 import requestContextPlugin from './plugins/request-context.js'
 import scalarPlugin from './plugins/scalar.js'
 import sensiblePlugin from './plugins/sensible.js'
 import underPressurePlugin from './plugins/under-pressure.js'
+import valkeyPlugin from './plugins/valkey.js'
 
 type TrustProxyConfig = FastifyServerOptions['trustProxy']
 
@@ -124,7 +124,7 @@ export async function buildApp() {
 
   // Data layer
   await fastify.register(dbPlugin)
-  await fastify.register(redisPlugin)
+  await fastify.register(valkeyPlugin)
   await fastify.register(rateLimitPlugin)
 
   // Core utilities
@@ -135,6 +135,13 @@ export async function buildApp() {
   await fastify.register(compressPlugin)
   await fastify.register(corsPlugin)
   await fastify.register(cookiePlugin)
+
+  // API docs
+  await fastify.register(scalarPlugin)
+
+  // Data layer
+  await fastify.register(rateLimitPlugin)
+  await fastify.register(dbPlugin)
 
   // Reliability
   await fastify.register(underPressurePlugin)
