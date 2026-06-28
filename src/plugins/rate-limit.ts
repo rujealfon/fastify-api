@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import rateLimit from '@fastify/rate-limit'
 import fp from 'fastify-plugin'
+import { createValkeyRateLimitStore } from './rate-limit-store.js'
 
 const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
   // Keep local development and integration tests unthrottled. Production uses
@@ -11,7 +12,7 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(rateLimit, {
     max: 100,
     timeWindow: '15 minutes',
-    redis: fastify.redis,
+    store: createValkeyRateLimitStore(fastify.valkey),
     // Parse the leftmost entry from x-forwarded-for so clients behind a trusted
     // reverse proxy are keyed by their real IP. Do not trust the full header
     // string as a key — a single client can send multiple IPs in the chain.

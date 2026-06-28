@@ -8,7 +8,7 @@ This is a Fastify TypeScript API. Source code lives in `src/`, with startup in `
 
 Run project scripts with `nub`; Docker services are required for most tasks.
 
-- `docker-compose up -d` starts Postgres, Redis, the app, Drizzle Studio, and pgAdmin.
+- `docker-compose up -d` starts Postgres, Valkey, the app, Drizzle Studio, and pgAdmin.
 - `nub build` compiles TypeScript and resolves path aliases with `tsc-alias`.
 - `nub test:unit` runs Vitest integration tests inside the app container.
 - `docker exec -e NODE_ENV=test fastify_app nubx vitest run src/tests/modules/users.test.ts` runs one test file.
@@ -21,7 +21,7 @@ Use TypeScript ES modules and the `@/` alias for imports from `src/`. Follow the
 
 ## Testing Guidelines
 
-Tests use Vitest and exercise the real database and Redis; do not mock these dependencies. Create apps with `createTestApp()` and authenticate with `registerAndLogin()` from `src/tests/fixtures/index.ts`. Use `app.inject()` for HTTP requests. Name module tests with the pattern `src/tests/modules/<domain>.test.ts`.
+Tests use Vitest and exercise the real database and Valkey; do not mock these dependencies. Create apps with `createTestApp()` and authenticate with `registerAndLogin()` from `src/tests/fixtures/index.ts`. Use `app.inject()` for HTTP requests. Name module tests with the pattern `src/tests/modules/<domain>.test.ts`.
 
 ## Review Guidelines
 
@@ -36,7 +36,7 @@ Tests use Vitest and exercise the real database and Redis; do not mock these dep
 - Route handlers must return only the statuses declared in the contract schema (`responses` map). Undeclared statuses will not be serialized correctly by `fastify-type-provider-zod`.
 
 ### Services & Architecture
-- Services must be framework-free: no `FastifyRequest`, `FastifyReply`, decorators, or `request.server`. Inject `db` (Drizzle `postgres-js` client), `redis` (ioredis via `@fastify/redis`), and primitive values explicitly.
+- Services must be framework-free: no `FastifyRequest`, `FastifyReply`, decorators, or `request.server`. Inject `db` (Drizzle `postgres-js` client), `valkey` (Valkey GLIDE client), and primitive values explicitly.
 - Never import from `src/plugins/` or `src/modules/` inside a service; services are consumed by route handlers, not the reverse.
 
 ### Database (Drizzle + PostgreSQL)
@@ -45,9 +45,9 @@ Tests use Vitest and exercise the real database and Redis; do not mock these dep
 - Multi-write flows require a Drizzle transaction. Check for N+1 queries in loops — prefer `.where(inArray(...))` batch fetches.
 - Schema changes require a generated migration (`nub db:generate`) and backwards-compatibility notes if existing data is affected. Add indexes on foreign keys and columns used in common filters.
 
-### Redis & Plugins
-- Redis is registered via `@fastify/redis`; access through `fastify.redis`. Do not instantiate a separate ioredis client.
-- Plugin registration order in `app.ts` must be preserved: `env` → `db` → `redis` → `rate-limit` → `helmet` → `cors` → `cookie` → `jwt` → `request-context` → auth decorators → routes.
+### Valkey & Plugins
+- Valkey is registered by `src/plugins/valkey.ts`; access through `fastify.valkey`. Do not instantiate separate Valkey clients elsewhere.
+- Plugin registration order in `app.ts` must be preserved: `env` → `db` → `valkey` → `rate-limit` → `helmet` → `cors` → `cookie` → `jwt` → `request-context` → auth decorators → routes.
 - Changes to `@fastify/rate-limit`, `@fastify/helmet`, `@fastify/cors`, `@fastify/jwt`, or `@fastify/cookie` must not weaken production defaults (e.g. sameSite, httpOnly, secure flags on cookies; CORS origin whitelist).
 - OpenTelemetry (`@opentelemetry/auto-instrumentations-node`) and Prometheus (`prom-client`) instrumentation must remain intact; do not remove trace/metric instrumentation from request paths.
 
@@ -63,7 +63,7 @@ Tests use Vitest and exercise the real database and Redis; do not mock these dep
 
 ### Testing
 - Add or update `app.inject()` tests for every route behavior change: auth failures (401), permission failures (403), validation errors (422), pagination, soft-delete behavior, audit-log side effects, and sensitive-field omission.
-- Tests hit the real database and Redis — do not mock them. Use `createTestApp()` and `registerAndLogin()` from `src/tests/fixtures/index.ts`.
+- Tests hit the real database and Valkey — do not mock them. Use `createTestApp()` and `registerAndLogin()` from `src/tests/fixtures/index.ts`.
 
 ## Commit & Pull Request Guidelines
 
@@ -75,4 +75,4 @@ All `timestamp` columns use `{ withTimezone: true }` (maps to Postgres `TIMESTAM
 
 ## Architecture & Configuration Notes
 
-Preserve the plugin registration order in `app.ts`: `env` first, Redis before rate limiting, and request context before auth and request ID hooks. Domain errors should extend `AppError` and use existing subclasses such as `NotFoundError`, `UnauthorizedError`, `ConflictError`, and `ValidationError`. Copy `.env.example` to `.env`; required variables include `DATABASE_URL`, `JWT_SECRET`, and `REDIS_URL`.
+Preserve the plugin registration order in `app.ts`: `env` first, Valkey before rate limiting, and request context before auth and request ID hooks. Domain errors should extend `AppError` and use existing subclasses such as `NotFoundError`, `UnauthorizedError`, `ConflictError`, and `ValidationError`. Copy `.env.example` to `.env`; required variables include `DATABASE_URL`, `JWT_SECRET`, and `VALKEY_URL`.

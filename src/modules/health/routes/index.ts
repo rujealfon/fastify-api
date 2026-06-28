@@ -19,7 +19,7 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get('/ready', {
     schema: {
       tags: ['Health'],
-      summary: 'Readiness probe (checks DB + Redis connectivity)',
+      summary: 'Readiness probe (checks DB + Valkey connectivity)',
       response: {
         200: apiSuccessSchema(z.object({ status: z.string() })),
         503: apiErrorSchema,

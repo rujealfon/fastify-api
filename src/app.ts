@@ -25,11 +25,11 @@ import metricsPlugin from './plugins/metrics.js'
 import mobileAuthPlugin from './plugins/mobile-auth.js'
 import multipartPlugin from './plugins/multipart.js'
 import rateLimitPlugin from './plugins/rate-limit.js'
-import redisPlugin from './plugins/redis.js'
 import requestContextPlugin from './plugins/request-context.js'
 import scalarPlugin from './plugins/scalar.js'
 import sensiblePlugin from './plugins/sensible.js'
 import underPressurePlugin from './plugins/under-pressure.js'
+import valkeyPlugin from './plugins/valkey.js'
 
 export async function buildApp() {
   const fastify = Fastify({
@@ -65,7 +65,8 @@ export async function buildApp() {
   await fastify.register(scalarPlugin)
 
   // Data layer
-  await fastify.register(redisPlugin)
+  await fastify.register(valkeyPlugin)
+  await fastify.register(rateLimitPlugin)
   await fastify.register(dbPlugin)
   await fastify.register(rateLimitPlugin)
 

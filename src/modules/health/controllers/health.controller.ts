@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
-import { checkDb, checkRedis } from '@/modules/health/services/health.service.js'
+import { checkDb, checkValkey } from '@/modules/health/services/health.service.js'
 
 interface PressureMetrics {
   heapUsed: number
@@ -20,17 +20,17 @@ export async function liveness(_request: FastifyRequest, _reply: FastifyReply) {
 }
 
 export async function readiness(request: FastifyRequest, reply: FastifyReply) {
-  const [dbOk, redisOk] = await Promise.all([
+  const [dbOk, valkeyOk] = await Promise.all([
     checkDb(request.server.db),
-    checkRedis(request.server.redis),
+    checkValkey(request.server.valkey),
   ])
 
-  if (!dbOk || !redisOk) {
+  if (!dbOk || !valkeyOk) {
     return reply.status(503).send({
       success: false,
       error: {
         code: 'SERVICE_UNAVAILABLE',
-        message: !dbOk ? 'database unreachable' : 'redis unreachable',
+        message: !dbOk ? 'database unreachable' : 'valkey unreachable',
       },
     })
   }

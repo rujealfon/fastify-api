@@ -4,7 +4,7 @@ One file per Fastify plugin. Every file wraps its plugin with `fastify-plugin` (
 
 ## Registration order (app.ts)
 
-The order matters — plugins that depend on `fastify.config`, `fastify.redis`, etc. must be registered after their dependencies.
+The order matters — plugins that depend on `fastify.config`, `fastify.valkey`, etc. must be registered after their dependencies.
 
 ```
 envPlugin          ← must be first; all others read fastify.config
@@ -14,8 +14,8 @@ compressPlugin     ← response compression (brotli › gzip › deflate)
 corsPlugin
 cookiePlugin       ← needs fastify.config (COOKIE_SECRET)
 scalarPlugin       ← Swagger spec + Scalar UI
-redisPlugin        ← fastify.redis — must precede rate-limit
-rateLimitPlugin    ← Redis-backed; reads fastify.redis
+valkeyPlugin       ← fastify.valkey — must precede rate-limit
+rateLimitPlugin    ← Valkey-backed; reads fastify.valkey
 dbPlugin           ← fastify.db
 underPressurePlugin← auto-503 when heap/loop thresholds exceeded
 multipartPlugin    ← file upload body parser
@@ -35,7 +35,7 @@ requestIdHook      ← writes requestId into request context
 | `helmet.ts` | `@fastify/helmet` | Security response headers |
 | `cors.ts` | `@fastify/cors` | CORS — production-restricted by `NODE_ENV` |
 | `cookie.ts` | `@fastify/cookie` | Signed cookie parsing (`COOKIE_SECRET` \| `JWT_SECRET`) |
-| `redis.ts` | `@fastify/redis` | `fastify.redis` — shared ioredis client |
+| `valkey.ts` | `@valkey/valkey-glide` | `fastify.valkey` — shared Valkey GLIDE client |
 | `rate-limit.ts` | `@fastify/rate-limit` | Production-only per-IP rate limiting (Redis store, 100 req / 15 min) |
 | `db.ts` | `drizzle-orm` | `fastify.db` — typed Drizzle ORM instance |
 | `under-pressure.ts` | `@fastify/under-pressure` | Auto-503 when heap > 200 MB, RSS > 300 MB, or loop delay > 1 s |
