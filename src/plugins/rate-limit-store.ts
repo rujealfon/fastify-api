@@ -1,7 +1,11 @@
 import type { FastifyRateLimitOptions, FastifyRateLimitStore } from '@fastify/rate-limit'
+import type { Span } from '@opentelemetry/api'
 import type { GlideClient, GlideReturnType } from '@valkey/valkey-glide'
 import type { RouteOptions } from 'fastify'
+import { SpanStatusCode, trace } from '@opentelemetry/api'
 import { Script } from '@valkey/valkey-glide'
+
+const tracer = trace.getTracer('fastify-api.rate-limit-store')
 
 const rateLimitScript = new Script(`
   local key = KEYS[1]
@@ -89,24 +93,46 @@ export function createValkeyRateLimitStore(valkey: GlideClient): RateLimitStoreC
     }
 
     private async increment(key: string, timeWindow: number, max: number) {
-      const result = await valkey.invokeScript(rateLimitScript, {
-        keys: [`${this.keyPrefix}${key}`],
-        args: [
-          String(timeWindow),
-          String(max),
-          String(this.continueExceeding),
-          String(this.exponentialBackoff),
-        ],
+      return tracer.startActiveSpan('valkey.rate_limit.increment', async (span: Span) => {
+        span.setAttributes({
+          'db.system.name': 'valkey',
+          'db.operation.name': 'invokeScript',
+          'db.collection.name': 'rate-limit',
+          'rate_limit.time_window_ms': timeWindow,
+          'rate_limit.max': max,
+          'rate_limit.continue_exceeding': this.continueExceeding,
+          'rate_limit.exponential_backoff': this.exponentialBackoff,
+        })
+
+        try {
+          const result = await valkey.invokeScript(rateLimitScript, {
+            keys: [`${this.keyPrefix}${key}`],
+            args: [
+              String(timeWindow),
+              String(max),
+              String(this.continueExceeding),
+              String(this.exponentialBackoff),
+            ],
+          })
+
+          if (!Array.isArray(result)) {
+            throw new TypeError('Unexpected Valkey rate-limit response')
+          }
+
+          return {
+            current: toNumber(result[0]),
+            ttl: toNumber(result[1]),
+          }
+        }
+        catch (error) {
+          span.recordException(error instanceof Error ? error : new Error(String(error)))
+          span.setStatus({ code: SpanStatusCode.ERROR })
+          throw error
+        }
+        finally {
+          span.end()
+        }
       })
-
-      if (!Array.isArray(result)) {
-        throw new TypeError('Unexpected Valkey rate-limit response')
-      }
-
-      return {
-        current: toNumber(result[0]),
-        ttl: toNumber(result[1]),
-      }
     }
   }
 }
