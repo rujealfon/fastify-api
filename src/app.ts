@@ -136,13 +136,6 @@ export async function buildApp() {
   await fastify.register(corsPlugin)
   await fastify.register(cookiePlugin)
 
-  // API docs
-  await fastify.register(scalarPlugin)
-
-  // Data layer
-  await fastify.register(rateLimitPlugin)
-  await fastify.register(dbPlugin)
-
   // Reliability
   await fastify.register(underPressurePlugin)
 
