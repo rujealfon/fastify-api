@@ -2,7 +2,7 @@ import type { Db } from '@/db/index.js'
 import type { LoginBody, RegisterBody } from '@/modules/auth/schemas/index.js'
 import bcrypt from 'bcryptjs'
 import { and, eq, isNotNull, isNull } from 'drizzle-orm'
-import { PG_UNIQUE_VIOLATION } from '@/common/constants/index.js'
+import { PG_UNIQUE_VIOLATION, ROLES } from '@/common/constants/index.js'
 import { ConflictError, UnauthorizedError } from '@/common/errors/AppError.js'
 import { profiles, roles, userRoles, users } from '@/db/schema/index.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
@@ -30,10 +30,12 @@ export async function registerUser(db: Db, body: RegisterBody) {
   const dead = await db.query.users.findFirst({ where: and(eq(users.email, body.email), isNotNull(users.deletedAt)) })
   if (dead) {
     if (await bcrypt.compare(body.password, dead.passwordHash)) {
-      await db.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, dead.id))
-      const [userRole] = await db.select({ id: roles.id }).from(roles).where(eq(roles.name, 'user')).limit(1)
-      if (userRole)
-        await db.insert(userRoles).values({ userId: dead.id, roleId: userRole.id }).onConflictDoNothing()
+      await db.transaction(async (tx) => {
+        await tx.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, dead.id))
+        const [userRole] = await tx.select({ id: roles.id }).from(roles).where(eq(roles.name, ROLES.USER)).limit(1)
+        if (userRole)
+          await tx.insert(userRoles).values({ userId: dead.id, roleId: userRole.id }).onConflictDoNothing()
+      })
       logAudit(db, { userId: dead.id, action: 'auth.account_restored', resourceType: 'user', resourceId: dead.id })
       return { id: dead.id, email: dead.email }
     }
@@ -52,7 +54,7 @@ export async function registerUser(db: Db, body: RegisterBody) {
       await tx.insert(profiles).values({ userId: row.id })
 
       // Assign the default 'user' role if seed has been run
-      const [userRole] = await tx.select({ id: roles.id }).from(roles).where(eq(roles.name, 'user')).limit(1)
+      const [userRole] = await tx.select({ id: roles.id }).from(roles).where(eq(roles.name, ROLES.USER)).limit(1)
       if (userRole)
         await tx.insert(userRoles).values({ userId: row.id, roleId: userRole.id })
 

@@ -195,6 +195,10 @@ Each log entry records `action`, `resource_type`, `resource_id`, `metadata`, and
 
 > **Production note:** `/metrics` should be restricted at the network/gateway level and not exposed publicly.
 
+### Deployment Notes
+
+In production, rate-limit keys prefer the leftmost `X-Forwarded-For` entry so clients behind a reverse proxy are keyed by their originating IP. Only allow trusted proxies or gateways to set or forward `X-Forwarded-For`; if clients can send that header directly to the app, they can spoof different IPs and evade per-IP limits. Deployments should strip inbound forwarding headers at the edge and re-add them from the trusted proxy layer.
+
 ### Pagination
 
 All list endpoints accept `?page=1&limit=10` query parameters.
