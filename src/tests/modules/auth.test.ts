@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify'
+import bcrypt from 'bcryptjs'
 import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { auditLogs } from '@/db/schema/index.js'
+import { ROLES } from '@/common/constants/index.js'
+import { auditLogs, profiles, roles, userRoles, users } from '@/db/schema/index.js'
 import { createTestApp, eventually, extractTokenFromCookie, firstCookieHeader, registerAndLogin, registerAndLoginWithUser, resetDb } from '@/tests/fixtures/index.js'
 
 describe('auth API', () => {
@@ -360,6 +362,15 @@ describe('auth API', () => {
       return created.id
     }
 
+    async function createLegacyUser(email: string, password: string) {
+      const [user] = await app.db.insert(users).values({ email, passwordHash: await bcrypt.hash(password, 12) }).returning({ id: users.id })
+      await app.db.insert(profiles).values({ userId: user.id })
+      const role = await app.db.query.roles.findFirst({ where: eq(roles.name, ROLES.USER) })
+      if (role)
+        await app.db.insert(userRoles).values({ userId: user.id, roleId: role.id })
+      return user.id
+    }
+
     it('reactivates the same account on re-register with the correct password', async () => {
       const id = await registerThenDelete('erin@example.com')
 
@@ -367,6 +378,18 @@ describe('auth API', () => {
       expect(again.statusCode).toBe(201)
       expect(again.json<{ data: { id: string } }>().data.id).toBe(id)
       expect((await login('erin@example.com', 'Password123')).statusCode).toBe(200)
+    })
+
+    it('reactivates a legacy account with a correct weak password', async () => {
+      const email = 'legacy@example.com'
+      const password = 'password123'
+      const id = await createLegacyUser(email, password)
+      const token = extractTokenFromCookie((await login(email, password)).headers['set-cookie'])
+      await app.inject({ method: 'DELETE', url: `/api/v1/users/${id}`, headers: { authorization: `Bearer ${token}` } })
+
+      const again = await register(email, password)
+      expect(again.statusCode).toBe(201)
+      expect(again.json<{ data: { id: string } }>().data.id).toBe(id)
     })
 
     it('restores the account\'s profile data on reactivation', async () => {

@@ -3,7 +3,8 @@ import type { LoginBody, RegisterBody } from '@/modules/auth/schemas/index.js'
 import bcrypt from 'bcryptjs'
 import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import { PG_UNIQUE_VIOLATION, ROLES } from '@/common/constants/index.js'
-import { ConflictError, UnauthorizedError } from '@/common/errors/AppError.js'
+import { AppError, ConflictError, UnauthorizedError } from '@/common/errors/AppError.js'
+import { passwordSchema } from '@/common/schemas/index.js'
 import { profiles, roles, userRoles, users } from '@/db/schema/index.js'
 import { logAudit } from '@/modules/audit-logs/helpers/log-audit.js'
 
@@ -41,6 +42,10 @@ export async function registerUser(db: Db, body: RegisterBody) {
     }
     throw new ConflictError('An account with this email already exists')
   }
+
+  const password = passwordSchema.safeParse(body.password)
+  if (!password.success)
+    throw new AppError(400, 'VALIDATION_ERROR', password.error.issues[0]?.message ?? 'Invalid password')
 
   const passwordHash = await bcrypt.hash(body.password, 12)
 

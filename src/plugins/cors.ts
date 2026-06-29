@@ -18,7 +18,7 @@ const corsPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(cors, {
     origin,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Mobile-Api-Key'],
     credentials: true,
   })
 }

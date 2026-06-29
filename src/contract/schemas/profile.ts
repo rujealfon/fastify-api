@@ -11,6 +11,7 @@ export const profileSchema = {
     responses: {
       200: apiSuccessSchema(userSchema),
       401: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
 } satisfies RouteMap

@@ -24,6 +24,7 @@ export const usersSchema = {
       200: apiListSchema(userSchema),
       401: apiErrorSchema,
       403: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   get: {
@@ -37,6 +38,7 @@ export const usersSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       404: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   create: {
@@ -50,6 +52,7 @@ export const usersSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       409: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   update: {
@@ -65,6 +68,7 @@ export const usersSchema = {
       403: apiErrorSchema,
       404: apiErrorSchema,
       409: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   delete: {
@@ -78,6 +82,7 @@ export const usersSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       404: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   assignRole: {
@@ -91,6 +96,7 @@ export const usersSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       404: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   removeRole: {
@@ -104,6 +110,7 @@ export const usersSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       404: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
 } satisfies RouteMap

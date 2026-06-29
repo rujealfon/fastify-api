@@ -98,6 +98,7 @@ cp .env.example .env
 | `LOG_LEVEL` | | `info` | Pino log level |
 | `COOKIE_SECRET` | | *(JWT_SECRET)* | Secret for signed cookies — falls back to `JWT_SECRET` if empty |
 | `OTEL_ENDPOINT` | | *(disabled)* | OTLP HTTP endpoint (e.g. `http://localhost:4318/v1/traces`). Leave empty to disable tracing. |
+| `TRUST_PROXY` | | *(disabled)* | Fastify trusted proxy setting for production client IPs, e.g. `127.0.0.1`, `10.0.0.0/8`, or `1` trusted hop |
 
 ## API Documentation
 

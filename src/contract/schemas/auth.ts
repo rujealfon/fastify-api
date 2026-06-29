@@ -17,6 +17,8 @@ export const authSchema = {
     body: registerBodySchema,
     responses: {
       201: apiSuccessSchema(authUserSchema),
+      400: apiErrorSchema,
+      429: apiErrorSchema,
       409: apiErrorSchema,
     },
   },
@@ -29,6 +31,7 @@ export const authSchema = {
     responses: {
       200: apiSuccessSchema(authUserSchema),
       401: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   mobileLogin: {
@@ -41,6 +44,7 @@ export const authSchema = {
       200: apiSuccessSchema(loginResponseSchema),
       401: apiErrorSchema,
       403: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   logout: {
@@ -50,6 +54,7 @@ export const authSchema = {
     optionalAuth: true,
     responses: {
       200: apiSuccessSchema(z.null()),
+      429: apiErrorSchema,
     },
   },
 } satisfies RouteMap

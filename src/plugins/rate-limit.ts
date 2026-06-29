@@ -10,17 +10,12 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
     return
 
   await fastify.register(rateLimit, {
+    global: true,
     max: 100,
     timeWindow: '15 minutes',
     store: createValkeyRateLimitStore(fastify.valkey),
-    // Parse the leftmost entry from x-forwarded-for so clients behind a trusted
-    // reverse proxy are keyed by their real IP. Do not trust the full header
-    // string as a key — a single client can send multiple IPs in the chain.
-    keyGenerator: (request) => {
-      const xff = request.headers['x-forwarded-for']
-      const raw = Array.isArray(xff) ? xff[0] : xff
-      return raw?.split(',')[0]?.trim() ?? request.ip
-    },
+    allowList: request => request.url === '/health/live' || request.url === '/health/ready',
+    keyGenerator: request => request.ip,
   })
 }
 

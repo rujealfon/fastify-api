@@ -14,6 +14,7 @@ export const auditLogsSchema = {
       200: apiListSchema(auditLogSchema),
       401: apiErrorSchema,
       403: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   listForUser: {
@@ -27,6 +28,7 @@ export const auditLogsSchema = {
       200: apiListSchema(auditLogSchema),
       401: apiErrorSchema,
       403: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
 } satisfies RouteMap
