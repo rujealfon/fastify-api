@@ -86,35 +86,35 @@ export async function buildApp() {
     dotenv: true,
   })
 
-  // Core utilities
-  await fastify.register(sensiblePlugin)
+  // Data layer
+  await fastify.register(dbPlugin)
+  await fastify.register(valkeyPlugin)
+  await fastify.register(rateLimitPlugin)
 
   // Security & transport
   await fastify.register(helmetPlugin)
-  await fastify.register(compressPlugin)
   await fastify.register(corsPlugin)
   await fastify.register(cookiePlugin)
 
+  // Auth
+  await fastify.register(jwtPlugin)
+  await fastify.register(requestContextPlugin)
+  await fastify.register(mobileAuthPlugin)
+  await fastify.register(authDecorator)
+  await fastify.register(requestIdHook)
+
+  // Core utilities
+  await fastify.register(sensiblePlugin)
+  await fastify.register(compressPlugin)
+
   // API docs
   await fastify.register(scalarPlugin)
-
-  // Data layer
-  await fastify.register(valkeyPlugin)
-  await fastify.register(rateLimitPlugin)
-  await fastify.register(dbPlugin)
 
   // Reliability
   await fastify.register(underPressurePlugin)
 
   // Request lifecycle
   await fastify.register(multipartPlugin)
-  await fastify.register(requestContextPlugin)
-
-  // Auth
-  await fastify.register(jwtPlugin)
-  await fastify.register(mobileAuthPlugin)
-  await fastify.register(authDecorator)
-  await fastify.register(requestIdHook)
 
   // Observability — registered after auth so fastify.authenticate is available
   await fastify.register(metricsPlugin)

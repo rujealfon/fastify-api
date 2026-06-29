@@ -55,6 +55,8 @@ services:
       OTEL_ENDPOINT: ''
       LOG_LEVEL: info
       MOBILE_API_KEY: change_this_to_a_random_string_at_least_32_characters
+      CORS_ORIGIN: ''
+      TRUST_PROXY: ''
     ports:
       - '3000:3000'
     volumes:
