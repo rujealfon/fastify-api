@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import fp from 'fastify-plugin'
 import { collectDefaultMetrics, Registry } from 'prom-client'
+import { PERMISSIONS } from '@/common/constants/index.js'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -17,6 +18,7 @@ const metricsPlugin: FastifyPluginAsync = async (fastify) => {
 
   fastify.get('/metrics', {
     schema: { hide: true },
+    preValidation: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.METRICS.READ_ANY)],
     handler: async (_request, reply) => {
       reply.header('Content-Type', registry.contentType)
       return registry.metrics()

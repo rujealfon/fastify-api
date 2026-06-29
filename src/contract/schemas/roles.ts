@@ -19,6 +19,7 @@ export const rolesSchema = {
       200: apiListSchema(roleSchema),
       401: apiErrorSchema,
       403: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   get: {
@@ -32,6 +33,7 @@ export const rolesSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       404: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   create: {
@@ -45,6 +47,7 @@ export const rolesSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       409: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   update: {
@@ -60,6 +63,7 @@ export const rolesSchema = {
       403: apiErrorSchema,
       404: apiErrorSchema,
       409: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   delete: {
@@ -73,6 +77,7 @@ export const rolesSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       404: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   assignPermission: {
@@ -86,6 +91,7 @@ export const rolesSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       404: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
   removePermission: {
@@ -99,6 +105,7 @@ export const rolesSchema = {
       401: apiErrorSchema,
       403: apiErrorSchema,
       404: apiErrorSchema,
+      429: apiErrorSchema,
     },
   },
 } satisfies RouteMap

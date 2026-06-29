@@ -27,7 +27,19 @@ export const PERMISSIONS = {
   PERMISSION: {
     READ_ANY: 'permission:read:any',
   },
+  PRODUCT: {
+    READ_ANY: 'product:read:any',
+    CREATE_ANY: 'product:create:any',
+    UPDATE_ANY: 'product:update:any',
+    DELETE_ANY: 'product:delete:any',
+  },
   AUDIT_LOG: {
     READ_ANY: 'audit-log:read:any',
+  },
+  METRICS: {
+    READ_ANY: 'metrics:read:any',
+  },
+  HEALTH: {
+    READ_DETAILS: 'health:read:details',
   },
 } as const

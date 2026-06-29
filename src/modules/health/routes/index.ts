@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
+import { PERMISSIONS } from '@/common/constants/index.js'
 import { apiErrorSchema, apiSuccessSchema } from '@/common/schemas/index.js'
 import * as controller from '@/modules/health/controllers/health.controller.js'
 
@@ -31,6 +32,7 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
     schema: {
       tags: ['Health'],
       summary: 'System details — memory, event loop, pressure status',
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }],
       response: {
         200: apiSuccessSchema(z.object({
           status: z.string(),
@@ -42,8 +44,12 @@ const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
           }),
           underPressure: z.boolean(),
         })),
+        401: apiErrorSchema,
+        403: apiErrorSchema,
+        429: apiErrorSchema,
       },
     },
+    preValidation: [fastify.authenticate, fastify.requirePermission(PERMISSIONS.HEALTH.READ_DETAILS)],
     handler: controller.details,
   })
 }

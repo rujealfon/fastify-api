@@ -20,7 +20,7 @@ export async function resetDb(app: Awaited<ReturnType<typeof createTestApp>>) {
 
 export async function registerAndLogin(
   app: Awaited<ReturnType<typeof createTestApp>>,
-  user = { email: 'test@example.com', password: 'password123' },
+  user = { email: 'test@example.com', password: 'Password123' },
 ) {
   await app.inject({
     method: 'POST',
@@ -51,11 +51,11 @@ async function registerWithRoleAndLogin(
   return extractTokenFromCookie(res.headers['set-cookie'])
 }
 
-export function registerAdminAndLogin(app: Awaited<ReturnType<typeof createTestApp>>, user = { email: 'admin@example.com', password: 'password123' }) {
+export function registerAdminAndLogin(app: Awaited<ReturnType<typeof createTestApp>>, user = { email: 'admin@example.com', password: 'Password123' }) {
   return registerWithRoleAndLogin(app, 'admin', user)
 }
 
-export function registerSuperAdminAndLogin(app: Awaited<ReturnType<typeof createTestApp>>, user = { email: 'superadmin@example.com', password: 'password123' }) {
+export function registerSuperAdminAndLogin(app: Awaited<ReturnType<typeof createTestApp>>, user = { email: 'superadmin@example.com', password: 'Password123' }) {
   return registerWithRoleAndLogin(app, 'super-admin', user)
 }
 
@@ -84,7 +84,7 @@ export async function eventually<T>(read: () => Promise<T>, done: (value: T) => 
 
 export async function registerAndLoginWithUser(
   app: Awaited<ReturnType<typeof createTestApp>>,
-  user = { email: 'test@example.com', password: 'password123' },
+  user = { email: 'test@example.com', password: 'Password123' },
 ) {
   const registerRes = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: user })
   const { data } = registerRes.json<{ data: { id: string, email: string } }>()

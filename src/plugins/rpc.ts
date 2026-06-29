@@ -42,6 +42,7 @@ export function createFastifyRpcPlugin<T extends RouteMap>(
       fastify.route({
         method: route.method as any,
         url: route.path,
+        ...(route.rateLimit !== undefined && { config: { rateLimit: route.rateLimit } }),
         schema: {
           ...(route.tags !== undefined && { tags: route.tags }),
           ...((route.auth || route.permission) && { security: [{ cookieAuth: [] }, { bearerAuth: [] }] }),

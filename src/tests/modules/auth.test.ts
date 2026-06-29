@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify'
+import bcrypt from 'bcryptjs'
 import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { auditLogs } from '@/db/schema/index.js'
+import { ROLES } from '@/common/constants/index.js'
+import { auditLogs, profiles, roles, userRoles, users } from '@/db/schema/index.js'
 import { createTestApp, eventually, extractTokenFromCookie, firstCookieHeader, registerAndLogin, registerAndLoginWithUser, resetDb } from '@/tests/fixtures/index.js'
 
 describe('auth API', () => {
@@ -26,7 +28,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
-        payload: { email: 'alice@example.com', password: 'password123' },
+        payload: { email: 'alice@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(201)
       const { data } = res.json<{ data: { id: string, email: string } }>()
@@ -38,13 +40,13 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
-        payload: { email: 'alice@example.com', password: 'password123' },
+        payload: { email: 'alice@example.com', password: 'Password123' },
       })
       expect(res.json()).not.toHaveProperty('data.passwordHash')
     })
 
     it('returns 409 for duplicate email', async () => {
-      const payload = { email: 'bob@example.com', password: 'password123' }
+      const payload = { email: 'bob@example.com', password: 'Password123' }
       await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload })
       const res = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload })
       expect(res.statusCode).toBe(409)
@@ -59,11 +61,20 @@ describe('auth API', () => {
       expect(res.statusCode).toBe(400)
     })
 
+    it('returns 400 for password meeting length but not complexity', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: { email: 'alice@example.com', password: 'password123' },
+      })
+      expect(res.statusCode).toBe(400)
+    })
+
     it('returns 400 for invalid email format', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
-        payload: { email: 'not-an-email', password: 'password123' },
+        payload: { email: 'not-an-email', password: 'Password123' },
       })
       expect(res.statusCode).toBe(400)
     })
@@ -72,7 +83,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
-        payload: { password: 'password123' },
+        payload: { password: 'Password123' },
       })
       expect(res.statusCode).toBe(400)
     })
@@ -94,7 +105,7 @@ describe('auth API', () => {
       await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
-        payload: { email: 'dave@example.com', password: 'password123' },
+        payload: { email: 'dave@example.com', password: 'Password123' },
       })
     })
 
@@ -102,7 +113,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
-        payload: { email: 'dave@example.com', password: 'password123' },
+        payload: { email: 'dave@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(200)
       const cookie = firstCookieHeader(res.headers['set-cookie'])
@@ -114,7 +125,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
-        payload: { email: 'dave@example.com', password: 'password123' },
+        payload: { email: 'dave@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(200)
       const { data } = res.json<{ data: { id: string, email: string } }>()
@@ -127,7 +138,7 @@ describe('auth API', () => {
       const loginRes = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
-        payload: { email: 'dave@example.com', password: 'password123' },
+        payload: { email: 'dave@example.com', password: 'Password123' },
       })
       const token = firstCookieHeader(loginRes.headers['set-cookie']).split(';')[0]
       const res = await app.inject({
@@ -151,7 +162,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
-        payload: { email: 'ghost@example.com', password: 'password123' },
+        payload: { email: 'ghost@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(401)
     })
@@ -173,7 +184,7 @@ describe('auth API', () => {
       await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
-        payload: { email: 'mobile@example.com', password: 'password123' },
+        payload: { email: 'mobile@example.com', password: 'Password123' },
       })
     })
 
@@ -182,7 +193,7 @@ describe('auth API', () => {
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
         headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
-        payload: { email: 'mobile@example.com', password: 'password123' },
+        payload: { email: 'mobile@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(200)
       const { data } = res.json<{ data: { id: string, email: string, token: string } }>()
@@ -197,7 +208,7 @@ describe('auth API', () => {
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
         headers: { 'x-mobile-api-key': 'wrong-key' },
-        payload: { email: 'mobile@example.com', password: 'password123' },
+        payload: { email: 'mobile@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(403)
     })
@@ -206,7 +217,7 @@ describe('auth API', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
-        payload: { email: 'mobile@example.com', password: 'password123' },
+        payload: { email: 'mobile@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(403)
     })
@@ -216,7 +227,7 @@ describe('auth API', () => {
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
         headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
-        payload: { email: 'mobile@example.com', password: 'password123' },
+        payload: { email: 'mobile@example.com', password: 'Password123' },
       })
       const { data } = loginRes.json<{ data: { token: string } }>()
 
@@ -243,7 +254,7 @@ describe('auth API', () => {
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
         headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
-        payload: { email: 'ghost@example.com', password: 'password123' },
+        payload: { email: 'ghost@example.com', password: 'Password123' },
       })
       expect(res.statusCode).toBe(401)
     })
@@ -263,7 +274,7 @@ describe('auth API', () => {
 
   describe('/api/v1/auth/logout POST ', () => {
     it('clears the token cookie', async () => {
-      const token = await registerAndLogin(app, { email: 'logout@example.com', password: 'password123' })
+      const token = await registerAndLogin(app, { email: 'logout@example.com', password: 'Password123' })
       const res = await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { cookie: `token=${token}` } })
       expect(res.statusCode).toBe(200)
       const cookie = firstCookieHeader(res.headers['set-cookie'])
@@ -272,7 +283,7 @@ describe('auth API', () => {
     })
 
     it('records the logged-out user in the audit log', async () => {
-      const { user, token } = await registerAndLoginWithUser(app, { email: 'logout-audit@example.com', password: 'password123' })
+      const { user, token } = await registerAndLoginWithUser(app, { email: 'logout-audit@example.com', password: 'Password123' })
 
       await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { cookie: `token=${token}` } })
 
@@ -306,14 +317,14 @@ describe('auth API', () => {
       const registerRes = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
-        payload: { email: 'mobile-logout@example.com', password: 'password123' },
+        payload: { email: 'mobile-logout@example.com', password: 'Password123' },
       })
       const { data: user } = registerRes.json<{ data: { id: string } }>()
       const loginRes = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/mobile/login',
         headers: { 'x-mobile-api-key': app.config.MOBILE_API_KEY },
-        payload: { email: 'mobile-logout@example.com', password: 'password123' },
+        payload: { email: 'mobile-logout@example.com', password: 'Password123' },
       })
       const { data: { token } } = loginRes.json<{ data: { token: string } }>()
 
@@ -345,25 +356,46 @@ describe('auth API', () => {
 
     // Register, then soft-delete the account. Returns the created id.
     async function registerThenDelete(email: string) {
-      const { data: created } = (await register(email, 'password123')).json<{ data: { id: string } }>()
-      const token = extractTokenFromCookie((await login(email, 'password123')).headers['set-cookie'])
+      const { data: created } = (await register(email, 'Password123')).json<{ data: { id: string } }>()
+      const token = extractTokenFromCookie((await login(email, 'Password123')).headers['set-cookie'])
       await app.inject({ method: 'DELETE', url: `/api/v1/users/${created.id}`, headers: { authorization: `Bearer ${token}` } })
       return created.id
+    }
+
+    async function createLegacyUser(email: string, password: string) {
+      const [user] = await app.db.insert(users).values({ email, passwordHash: await bcrypt.hash(password, 12) }).returning({ id: users.id })
+      await app.db.insert(profiles).values({ userId: user.id })
+      const role = await app.db.query.roles.findFirst({ where: eq(roles.name, ROLES.USER) })
+      if (role)
+        await app.db.insert(userRoles).values({ userId: user.id, roleId: role.id })
+      return user.id
     }
 
     it('reactivates the same account on re-register with the correct password', async () => {
       const id = await registerThenDelete('erin@example.com')
 
-      const again = await register('erin@example.com', 'password123')
+      const again = await register('erin@example.com', 'Password123')
       expect(again.statusCode).toBe(201)
       expect(again.json<{ data: { id: string } }>().data.id).toBe(id)
-      expect((await login('erin@example.com', 'password123')).statusCode).toBe(200)
+      expect((await login('erin@example.com', 'Password123')).statusCode).toBe(200)
+    })
+
+    it('reactivates a legacy account with a correct weak password', async () => {
+      const email = 'legacy@example.com'
+      const password = 'password123'
+      const id = await createLegacyUser(email, password)
+      const token = extractTokenFromCookie((await login(email, password)).headers['set-cookie'])
+      await app.inject({ method: 'DELETE', url: `/api/v1/users/${id}`, headers: { authorization: `Bearer ${token}` } })
+
+      const again = await register(email, password)
+      expect(again.statusCode).toBe(201)
+      expect(again.json<{ data: { id: string } }>().data.id).toBe(id)
     })
 
     it('restores the account\'s profile data on reactivation', async () => {
       const email = 'iris@example.com'
-      const { data: created } = (await register(email, 'password123')).json<{ data: { id: string } }>()
-      const token = extractTokenFromCookie((await login(email, 'password123')).headers['set-cookie'])
+      const { data: created } = (await register(email, 'Password123')).json<{ data: { id: string } }>()
+      const token = extractTokenFromCookie((await login(email, 'Password123')).headers['set-cookie'])
       const headers = { authorization: `Bearer ${token}` }
 
       // set some profile data, then self-delete
@@ -371,8 +403,8 @@ describe('auth API', () => {
       await app.inject({ method: 'DELETE', url: `/api/v1/users/${created.id}`, headers })
 
       // reactivate, then confirm the profile data survived
-      await register(email, 'password123')
-      const token2 = extractTokenFromCookie((await login(email, 'password123')).headers['set-cookie'])
+      await register(email, 'Password123')
+      const token2 = extractTokenFromCookie((await login(email, 'Password123')).headers['set-cookie'])
       const me = await app.inject({ method: 'GET', url: '/api/v1/profile', headers: { authorization: `Bearer ${token2}` } })
       expect(me.statusCode).toBe(200)
       expect(me.json<{ data: { profile: { firstName: string | null } } }>().data.profile.firstName).toBe('Iris')
@@ -381,8 +413,8 @@ describe('auth API', () => {
     it('reactivated account retains the user role and can access own-account routes', async () => {
       const id = await registerThenDelete('jay@example.com')
 
-      await register('jay@example.com', 'password123')
-      const token = extractTokenFromCookie((await login('jay@example.com', 'password123')).headers['set-cookie'])
+      await register('jay@example.com', 'Password123')
+      const token = extractTokenFromCookie((await login('jay@example.com', 'Password123')).headers['set-cookie'])
 
       // user:update:own permission must be restored — self-PATCH requires it
       const patch = await app.inject({
@@ -397,23 +429,23 @@ describe('auth API', () => {
     it('returns 409 when re-registering a soft-deleted account with the wrong password', async () => {
       await registerThenDelete('frank@example.com')
 
-      const again = await register('frank@example.com', 'differentpw')
+      const again = await register('frank@example.com', 'DifferentPassword1')
       expect(again.statusCode).toBe(409)
     })
 
     it('does not let a soft-deleted account log in', async () => {
       await registerThenDelete('grace@example.com')
-      expect((await login('grace@example.com', 'password123')).statusCode).toBe(401)
+      expect((await login('grace@example.com', 'Password123')).statusCode).toBe(401)
     })
 
     it('does not block correct-password reactivation after a failed wrong-password attempt', async () => {
       const id = await registerThenDelete('henry@example.com')
 
       // wrong password → 409, no orphan account created
-      expect((await register('henry@example.com', 'wrongpassword')).statusCode).toBe(409)
+      expect((await register('henry@example.com', 'WrongPassword1')).statusCode).toBe(409)
 
       // original password still reactivates the same account
-      const again = await register('henry@example.com', 'password123')
+      const again = await register('henry@example.com', 'Password123')
       expect(again.statusCode).toBe(201)
       expect(again.json<{ data: { id: string } }>().data.id).toBe(id)
     })

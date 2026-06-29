@@ -10,7 +10,7 @@ const SEED_ROLES = [
   { name: 'user', description: 'Standard user access', isSystemRole: false },
 ]
 
-const SEED_PERMISSIONS = [
+export const SEED_PERMISSIONS = [
   { resource: 'user', action: 'create', scope: 'any' },
   { resource: 'user', action: 'read', scope: 'any' },
   { resource: 'user', action: 'update', scope: 'any' },
@@ -25,12 +25,19 @@ const SEED_PERMISSIONS = [
   { resource: 'permission', action: 'read', scope: 'any' },
   { resource: 'permission', action: 'update', scope: 'any' },
   { resource: 'permission', action: 'delete', scope: 'any' },
+  { resource: 'product', action: 'read', scope: 'any' },
+  { resource: 'product', action: 'create', scope: 'any' },
+  { resource: 'product', action: 'update', scope: 'any' },
+  { resource: 'product', action: 'delete', scope: 'any' },
   { resource: 'audit-log', action: 'read', scope: 'any' },
+  { resource: 'metrics', action: 'read', scope: 'any' },
+  { resource: 'health', action: 'read', scope: 'details' },
 ]
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   'super-admin': SEED_PERMISSIONS.map(p => `${p.resource}:${p.action}:${p.scope}`),
   'admin': [
+    'health:read:details',
     'user:create:any',
     'user:read:any',
     'user:update:any',
@@ -39,9 +46,13 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'user:update:own',
     'role:read:any',
     'permission:read:any',
+    'product:read:any',
+    'product:create:any',
+    'product:update:any',
+    'product:delete:any',
     'audit-log:read:any',
   ],
-  'user': ['user:read:own', 'user:update:own'],
+  'user': ['user:read:own', 'user:update:own', 'product:read:any'],
 }
 
 export async function seedRoles(db: Db) {

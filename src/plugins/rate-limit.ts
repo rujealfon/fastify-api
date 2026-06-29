@@ -4,20 +4,18 @@ import fp from 'fastify-plugin'
 import { createValkeyRateLimitStore } from './rate-limit-store.js'
 
 const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
-  // Skip in dev — hot reloads would exhaust the window constantly.
-  if (fastify.config.NODE_ENV === 'development')
+  // Keep local development and integration tests unthrottled. Production uses
+  // Redis-backed limits so counters are shared across app instances.
+  if (fastify.config.NODE_ENV !== 'production')
     return
 
   await fastify.register(rateLimit, {
+    global: true,
     max: 100,
     timeWindow: '15 minutes',
-    allowList: ['127.0.0.1'],
     store: createValkeyRateLimitStore(fastify.valkey),
-    // x-forwarded-for first so clients behind a reverse proxy are keyed by
-    // their real IP, not the proxy's. allowList is the real spoofing defence.
-    keyGenerator: (request) => {
-      return request.headers['x-forwarded-for'] as string ?? request.ip
-    },
+    allowList: request => request.url === '/health/live' || request.url === '/health/ready',
+    keyGenerator: request => request.ip,
   })
 }
 

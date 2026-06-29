@@ -13,6 +13,8 @@ export interface RouteSchema<
   auth?: boolean
   optionalAuth?: boolean
   permission?: string
+  tags?: string[]
+  rateLimit?: { max: number, timeWindow: string }
   query?: TQuery
   params?: TParams
   body?: TBody
@@ -26,6 +28,7 @@ export type RouteMap = Record<string, {
   optionalAuth?: boolean
   permission?: string
   tags?: string[]
+  rateLimit?: { max: number, timeWindow: string }
   query?: z.ZodType
   params?: z.ZodType
   body?: z.ZodType

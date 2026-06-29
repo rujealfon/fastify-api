@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { SEED_PERMISSIONS } from '@/db/seed.js'
 import { createTestApp, registerAdminAndLogin, registerAndLogin, registerSuperAdminAndLogin, resetDb } from '@/tests/fixtures/index.js'
 
 interface Permission {
@@ -57,10 +58,10 @@ describe('permissions API', () => {
       expect(res.statusCode).toBe(200)
     })
 
-    it('returns all 15 seeded permissions', async () => {
+    it('returns every seeded permission', async () => {
       const res = await app.inject({ method: 'GET', url: '/api/v1/permissions', headers: auth(adminToken) })
       const { data } = res.json<{ data: Permission[] }>()
-      expect(data).toHaveLength(15)
+      expect(data).toHaveLength(SEED_PERMISSIONS.length)
     })
 
     it('returns permissions with correct shape', async () => {
@@ -79,23 +80,7 @@ describe('permissions API', () => {
       const { data } = res.json<{ data: Permission[] }>()
       const keys = data.map(p => `${p.resource}:${p.action}:${p.scope}`)
 
-      const expected = [
-        'user:create:any',
-        'user:read:any',
-        'user:update:any',
-        'user:delete:any',
-        'user:read:own',
-        'user:update:own',
-        'role:create:any',
-        'role:read:any',
-        'role:update:any',
-        'role:delete:any',
-        'permission:create:any',
-        'permission:read:any',
-        'permission:update:any',
-        'permission:delete:any',
-        'audit-log:read:any',
-      ]
+      const expected = SEED_PERMISSIONS.map(p => `${p.resource}:${p.action}:${p.scope}`)
 
       for (const key of expected) {
         expect(keys).toContain(key)

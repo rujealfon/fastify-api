@@ -94,10 +94,11 @@ cp .env.example .env
 | `TEST_DATABASE_URL` | | *(empty)* | PostgreSQL connection string used by test runs |
 | `PORT` | | `3000` | Server port |
 | `HOST` | | `0.0.0.0` | Server host |
-| `NODE_ENV` | | `development` | `development` \| `production` \| `test` |
+| `NODE_ENV` | | `development` | `development` \| `production` \| `test`. Rate limiting is enabled only in production. |
 | `LOG_LEVEL` | | `info` | Pino log level |
 | `COOKIE_SECRET` | | *(JWT_SECRET)* | Secret for signed cookies — falls back to `JWT_SECRET` if empty |
 | `OTEL_ENDPOINT` | | *(disabled)* | OTLP HTTP endpoint (e.g. `http://localhost:4318/v1/traces`). Leave empty to disable tracing. |
+| `TRUST_PROXY` | | *(disabled)* | Fastify trusted proxy setting for production client IPs, e.g. `127.0.0.1`, `10.0.0.0/8`, or `1` trusted hop |
 
 ## API Documentation
 
@@ -127,6 +128,8 @@ All scripts run via `nub` (or `nubx` inside containers). See [package.json](pack
 | POST | `/api/v1/auth/login` | — | Login — sets a `token` httpOnly cookie (web) |
 | POST | `/api/v1/auth/mobile/login` | `x-mobile-api-key` | Login for mobile — returns `token` in body, no cookie |
 | POST | `/api/v1/auth/logout` | — | Logout — clears the `token` cookie |
+
+Auth entry points (`register`, `login`, and `mobile/login`) are rate-limited to 5 requests per 15 minutes per client key in production. Development and test runs skip rate limiting so local API clients and integration tests are not throttled.
 
 ### Users
 
@@ -192,6 +195,10 @@ Each log entry records `action`, `resource_type`, `resource_id`, `metadata`, and
 | GET | `/metrics` | Prometheus metrics (prom-client default + Node.js metrics) |
 
 > **Production note:** `/metrics` should be restricted at the network/gateway level and not exposed publicly.
+
+### Deployment Notes
+
+In production, rate-limit keys prefer the leftmost `X-Forwarded-For` entry so clients behind a reverse proxy are keyed by their originating IP. Only allow trusted proxies or gateways to set or forward `X-Forwarded-For`; if clients can send that header directly to the app, they can spoof different IPs and evade per-IP limits. Deployments should strip inbound forwarding headers at the edge and re-add them from the trusted proxy layer.
 
 ### Pagination
 
@@ -361,7 +368,7 @@ Errors from the server surface as `RpcError` (with `.status` and `.data`) on the
 - **Zod is the single source of truth** for types — no manual interfaces. All types are derived via `z.infer<>` from schemas in each module's `schemas/index.ts`.
 - **Services have no Fastify imports** — they receive `db` as a parameter, making them independently testable.
 - **Error handling** is centralized in `app.ts` via `setErrorHandler`. All domain errors extend `AppError`.
-- **Rate limiting** uses Valkey as the store — safe for multi-instance / horizontally scaled deployments.
+- **Rate limiting** uses Valkey as the store — safe for multi-instance / horizontally scaled deployments. It is active only when `NODE_ENV=production`; development and test runs skip it.
 - **Request context** (`@fastify/request-context`) stores `requestId`, `userId`, `permissions`, and `isSuperAdmin` via AsyncLocalStorage, accessible anywhere in the call stack without passing them explicitly.
 - **Audit logging** is fire-and-forget (`logAudit` in `src/modules/audit-logs/helpers/`) — inserts never block the request path. Failures are silently swallowed so a logging error never surfaces to the caller.
 - **Graceful shutdown** is handled in `server.ts` — `SIGINT`/`SIGTERM` closes Fastify (draining connections) and flushes OpenTelemetry spans before exiting.

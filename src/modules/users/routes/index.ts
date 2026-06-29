@@ -31,14 +31,14 @@ export default createFastifyRpcPlugin(usersSchema, {
 
   create: async ({ body, request }) => {
     const user = await userService.createUser(request.server.db, body)
-    logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'user.created', resourceType: 'user', resourceId: user.id, metadata: { email: user.email } })
+    logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'user.created', resourceType: 'user', resourceId: user.id })
     return { status: 201 as const, body: { success: true as const, data: user } }
   },
 
   update: async ({ params, body, request }) => {
     assertSelfOrAdmin(request, params.id, PERMISSIONS.USER.UPDATE_ANY)
     const user = await userService.updateUser(request.server.db, params.id, body)
-    logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'user.updated', resourceType: 'user', resourceId: params.id, metadata: { changes: body } })
+    logAudit(request.server.db, { userId: request.requestContext.get('userId'), action: 'user.updated', resourceType: 'user', resourceId: params.id, metadata: { changedFields: Object.keys(body) } })
     return { status: 200 as const, body: { success: true as const, data: user } }
   },
 

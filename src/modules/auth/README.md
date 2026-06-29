@@ -51,4 +51,4 @@ Authentication module — user registration and login.
 
 ## Password hashing
 
-`bcryptjs` with the default salt rounds (10). Hashing happens in the service layer; controllers never touch raw passwords beyond passing the request body through.
+`bcryptjs` with 12 salt rounds. Hashing happens in the service layer; controllers never touch raw passwords beyond passing the request body through.

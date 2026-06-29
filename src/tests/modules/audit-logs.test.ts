@@ -84,7 +84,7 @@ describe('audit logs API', () => {
 
     it('returns 403 when requesting another user logs', async () => {
       const token = await registerAndLogin(app)
-      const otherToken = await registerAndLogin(app, { email: 'other@example.com', password: 'password123' })
+      const otherToken = await registerAndLogin(app, { email: 'other@example.com', password: 'Password123' })
 
       // Get the other user's id by logging in and hitting /profile
       const profileRes = await app.inject({
@@ -143,13 +143,12 @@ describe('audit logs API', () => {
 
   describe('mutation logging smoke tests', () => {
     it('records product.created after creating a product', async () => {
-      const userToken = await registerAndLogin(app)
       const adminToken = await registerAdminAndLogin(app)
 
       await app.inject({
         method: 'POST',
         url: '/api/v1/products',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: { authorization: `Bearer ${adminToken}` },
         payload: { name: 'Widget', price: 9.99, stock: 5 },
       })
 
@@ -167,13 +166,12 @@ describe('audit logs API', () => {
     })
 
     it('records product.deleted with metadata after deleting a product', async () => {
-      const userToken = await registerAndLogin(app)
       const adminToken = await registerAdminAndLogin(app)
 
       const created = await app.inject({
         method: 'POST',
         url: '/api/v1/products',
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: { authorization: `Bearer ${adminToken}` },
         payload: { name: 'Doomed Widget', price: 4.99, stock: 1 },
       })
       const productId = created.json().data.id
@@ -181,7 +179,7 @@ describe('audit logs API', () => {
       await app.inject({
         method: 'DELETE',
         url: `/api/v1/products/${productId}`,
-        headers: { authorization: `Bearer ${userToken}` },
+        headers: { authorization: `Bearer ${adminToken}` },
       })
 
       const body = await eventually(
@@ -209,12 +207,12 @@ describe('audit logs API', () => {
       )
       const log = body.data.find((l: { action: string }) => l.action === 'auth.logged_in')
       expect(log).toBeDefined()
-      expect(log.metadata).toMatchObject({ email: expect.any(String), ip: expect.any(String) })
+      expect(log.metadata).toMatchObject({ ip: expect.any(String) })
     })
 
     it('records user.deleted after deleting a user', async () => {
-      const observerToken = await registerSuperAdminAndLogin(app, { email: 'observer@example.com', password: 'password123' })
-      const adminToken = await registerAdminAndLogin(app, { email: 'todelete@example.com', password: 'password123' })
+      const observerToken = await registerSuperAdminAndLogin(app, { email: 'observer@example.com', password: 'Password123' })
+      const adminToken = await registerAdminAndLogin(app, { email: 'todelete@example.com', password: 'Password123' })
       const profileRes = await app.inject({
         method: 'GET',
         url: '/api/v1/profile',

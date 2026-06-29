@@ -45,3 +45,4 @@ No other files need to change — `fastify.config.MY_VAR` is immediately availab
 | `LOG_LEVEL` | `info` | Pino log levels |
 | `COOKIE_SECRET` | *(empty → JWT_SECRET)* | Secret for signed cookies |
 | `OTEL_ENDPOINT` | *(empty → disabled)* | OTLP HTTP trace exporter URL |
+| `TRUST_PROXY` | *(empty → disabled)* | Fastify trusted proxy setting for deriving `request.ip` behind a reverse proxy |
