@@ -10,7 +10,7 @@ export const registerBodySchema = z.object({
 
 export const loginBodySchema = z.object({
   email: z.email().meta({ examples: ['alice@example.com'] }),
-  password: z.string().min(1).meta({ examples: ['securepassword123'] }),
+  password: z.string().min(1).meta({ examples: ['SecurePassword1'] }),
 })
 
 export const authUserSchema = z.object({

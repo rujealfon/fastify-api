@@ -3,9 +3,9 @@ import underPressure from '@fastify/under-pressure'
 import fp from 'fastify-plugin'
 
 const underPressurePlugin: FastifyPluginAsync = async (fastify) => {
-  // Pressure thresholds (heap, event-loop delay) are routinely exceeded inside
-  // the test container, which would make every request return 503.
-  if (fastify.config.NODE_ENV === 'test')
+  // Dev/test run under watch and integration containers where these thresholds
+  // are routinely exceeded; keep auto-503 protection for production only.
+  if (fastify.config.NODE_ENV !== 'production')
     return
 
   await fastify.register(underPressure, {
