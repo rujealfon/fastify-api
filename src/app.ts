@@ -68,7 +68,6 @@ export async function buildApp() {
   await fastify.register(valkeyPlugin)
   await fastify.register(rateLimitPlugin)
   await fastify.register(dbPlugin)
-  await fastify.register(rateLimitPlugin)
 
   // Reliability
   await fastify.register(underPressurePlugin)
