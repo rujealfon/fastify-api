@@ -19,7 +19,7 @@ describe('trusted proxy handling', () => {
     originalTrustProxy = process.env.TRUST_PROXY
     delete process.env.TRUST_PROXY
     tempDir = mkdtempSync(join(tmpdir(), 'fastify-api-proxy-'))
-    writeFileSync(join(tempDir, '.env'), 'TRUST_PROXY=127.0.0.1\n')
+    writeFileSync(join(tempDir, '.env'), 'TRUST_PROXY=127.0.0.1 # local reverse proxy\n')
     process.chdir(tempDir)
     app = await createTestApp()
   })

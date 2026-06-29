@@ -53,7 +53,14 @@ function readDotEnvValue(key: string) {
     .split(/\r?\n/)
     .find(line => line.trim().startsWith(prefix))
   const value = line?.trim().slice(prefix.length).trim()
-  return value?.replace(/^["']|["']$/g, '')
+  if (!value)
+    return undefined
+  const quote = value[0]
+  if (quote === '"' || quote === '\'') {
+    const end = value.indexOf(quote, 1)
+    return end === -1 ? value.slice(1) : value.slice(1, end)
+  }
+  return value.replace(/\s+#.*$/, '').trim()
 }
 
 export async function buildApp() {
